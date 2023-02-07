@@ -96,7 +96,7 @@ export const UMLMethodeContainer: Component<{
                     <Field title="Name"
                         initValue={props.methode.name}
                         onInputChange={e => { props.methode.name = e.currentTarget.value; props.update() }} />
-                    <UMLAccessModifiersContainer initValue={props.methode.accessModifier} onChange={(mod: AccessModifiers) => {props.methode.accessModifier = mod; props.update();}} />
+                    <UMLAccessModifiersContainer id={`methode-${props.index}`} initValue={props.methode.accessModifier} onChange={(mod: AccessModifiers) => {props.methode.accessModifier = mod; props.update();}} />
                     <Field title="Return type"
                         initValue={props.methode.returnType}
                         onInputChange={e => { props.methode.returnType = e.currentTarget.value; props.update() }} />

@@ -284,12 +284,13 @@ const App: Component = () => {
               <Field title='Name'
                 initValue={currentClass().name}
                 onInputChange={e => { currentClass().name = e.currentTarget.value; updateView() }} />
-              <CheckBox title="Abstract" value={currentClass().isAbstract} onChanges={updateIsStatic} />
+              <CheckBox id="static" title="Abstract" value={currentClass().isAbstract} onChanges={updateIsStatic} />
             </div>
             <div id="attr-container" class="
-              flex flex-col
+              flex flex-col h-full
               overflow-hidden max-h-max bg-white rounded border border-sky-400 px-2 py-2 shadow">
               <Label title="Attributes" />
+              <Button title='Add attribute' onclick={pushAttribute} />
               <div class="overflow-y-auto h-full">
                 <For each={currentClass().attributes}>
                   {(attr, i) => <UMLAttributeContainer
@@ -300,12 +301,12 @@ const App: Component = () => {
                     delete={() => popAttribute(i())} />}
                 </For>
               </div>
-              <Button title='Add attribute' onclick={pushAttribute} />
             </div>
             <div id="meth-container" class="
-              flex flex-col
+              flex flex-col h-full
               overflow-hidden max-h-max bg-white rounded border border-sky-400 px-2 py-2 shadow">
               <Label title="Methodes" />
+              <Button title='Add methode' onclick={pushMethode} />
               <div class="overflow-y-auto h-full">
                 <For each={currentClass().methodes}>
                   {(meth, i) => <UMLMethodeContainer
@@ -316,7 +317,6 @@ const App: Component = () => {
                     delete={() => popMethode(i())} />}
                 </For>
               </div>
-              <Button title='Add methode' onclick={pushMethode} />
             </div>
           </div>
         </div>

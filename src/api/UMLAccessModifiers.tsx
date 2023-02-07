@@ -13,8 +13,9 @@ export interface IUMLAccessModifiers {
 }
 
 export const UMLAccessModifiersContainer : Component<{
+    id: string,
     initValue?: AccessModifiers,
-    onChange: Function
+    onChange: (accessModifier:AccessModifiers)=>void
 }> = (props) => { 
     const [accessModifier, setAccessModifier] = createSignal<AccessModifiers>(props.initValue);
 
@@ -30,18 +31,26 @@ export const UMLAccessModifiersContainer : Component<{
         <label class="font-small text-xs text-gray-500">Access Modifiers</label>
         <div class="grid grid-cols-2 gap-x-3">
             <div class="flex flex-col">
-                <CheckBox title="Public (+)" 
+                <CheckBox 
+                    title="Public (+)" 
+                    id={`public-${props.id}`}
                     value={accessModifier() === AccessModifiers.Public} 
                     onChanges={e => updateAccessModifier(AccessModifiers.Public)} />
-                <CheckBox title="Protected (#)" 
+                <CheckBox 
+                    title="Protected (#)" 
+                    id={`protected-${props.id}`}
                     value={accessModifier() === AccessModifiers.Proteced} 
                     onChanges={e => updateAccessModifier(AccessModifiers.Proteced)}/>
             </div>
             <div class="flex flex-col ">
-                <CheckBox title="Private (-)"
+                <CheckBox 
+                    title="Private (-)"
+                    id={`private-${props.id}`}
                     value={accessModifier() === AccessModifiers.Private} 
                     onChanges={e => updateAccessModifier(AccessModifiers.Private)} />
-                <CheckBox title="Internal (~)" 
+                <CheckBox 
+                    title="Internal (~)" 
+                    id={`internal-${props.id}`}
                     value={accessModifier() === AccessModifiers.Internal} 
                     onChanges={e => updateAccessModifier(AccessModifiers.Internal)}/>
             </div>
