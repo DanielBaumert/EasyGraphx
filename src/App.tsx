@@ -284,7 +284,7 @@ const App: Component = () => {
               <Field title='Name'
                 initValue={currentClass().name}
                 onInputChange={e => { currentClass().name = e.currentTarget.value; updateView() }} />
-              <CheckBox title="Abstract" value={currentClass().isAbstract} onChanges={updateIsStatic} />
+              <CheckBox id="static" title="Abstract" value={currentClass().isAbstract} onChanges={updateIsStatic} />
             </div>
             <div id="attr-container" class="
               flex flex-col h-full
