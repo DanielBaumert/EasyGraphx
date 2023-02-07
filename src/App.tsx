@@ -42,6 +42,13 @@ var canDraw: boolean = true;
 var changingsObserved: boolean = true;
 
 const App: Component = () => {
+  const [currentClass, setCurrentClass] = createSignal<UMLClass>(undefined, { equals: false });
+  const [isContextMenuOpen, setContextMenuOpen] = createSignal<boolean>(false);
+  const [locationContextMenu, setLocationContextMenu] = createSignal<Point>(undefined);
+  
+  let canvas: HTMLCanvasElement;
+
+
   const contextMenuItems:ItemInfo[] = [
   {
       title: "Add Class",
@@ -52,15 +59,17 @@ const App: Component = () => {
       }
     }, {
       title: "Save image",
-      onclick: () => {}
+      onclick: (e) => {
+          const link = document.createElement("a");
+          link.download = 'download.png';
+          link.href = canvas.toDataURL();
+          link.click();
+          link.remove();
+      }
     }
   ]
   
-  const [currentClass, setCurrentClass] = createSignal<UMLClass>(undefined, { equals: false });
-  const [isContextMenuOpen, setContextMenuOpen] = createSignal<boolean>(false);
-  const [locationContextMenu, setLocationContextMenu] = createSignal<Point>(undefined);
-  
-  let canvas: HTMLCanvasElement;
+
   
   onMount(() => {
     canvas.width = window.innerWidth;
@@ -77,13 +86,29 @@ const App: Component = () => {
     if (changingsObserved) {
       ctx.imageSmoothingQuality = 'high';
       ctx.imageSmoothingEnabled = true;
-
-      ctx.fillStyle = "white";
-      ctx.strokeStyle = "black";
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.width);
+
+      const clusterSize = 24;
+
+      const patternCanvas = document.createElement("canvas");
+      patternCanvas.width = clusterSize;
+      patternCanvas.height = clusterSize;
+      
+
+      const patternCanvasContext = patternCanvas.getContext("2d");
+      patternCanvasContext.strokeStyle = "#0f172a99";
+      patternCanvasContext.moveTo(clusterSize, 0);
+      patternCanvasContext.lineTo(clusterSize, clusterSize);
+      patternCanvasContext.lineTo(0, clusterSize);
+      patternCanvasContext.stroke();
+
+      const bgPattern = ctx.createPattern(patternCanvas, "repeat");
+      ctx.fillStyle = bgPattern;
+      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.width);
+
+      ctx.strokeStyle = "black";
+      ctx.fillStyle = "white";
       ctx.font = "16px Arial";
-
-
       for (var umlClass of store.classes) {
         var xPadding = 16;
 
@@ -91,16 +116,16 @@ const App: Component = () => {
         var attrSizes = umlClass.attributes.map(x => mesureText(ctx, x.toString()));
         var methSizes = umlClass.methodes.map(x => mesureText(ctx, x.toString()));
 
-        var maxHeaderBoxSize = titleSize.height;
+        var maxHeaderBoxSize = titleSize.height + 8;
         var maxBoxWidth = Math.max(
           titleSize.width + xPadding,
           ...methSizes.map(x => x.width + xPadding),
           ...attrSizes.map(x => x.width + xPadding));
-        var maxAttrBoxHeight = attrSizes.reduce((p, c) => p + c.height, 0);
-        var maxMethBoxHeight = methSizes.reduce((p, c) => p + c.height, 0);
+        var maxAttrBoxHeight = Math.max(attrSizes.reduce((p, c) => p + c.height, 0), 10);
+        var maxMethBoxHeight = Math.max(methSizes.reduce((p, c) => p + c.height, 0), 10);
 
         drawRectangle(ctx, umlClass.x, umlClass.y, maxBoxWidth, maxHeaderBoxSize, "black", "white");
-        drawTextHCenter(ctx, umlClass.x, umlClass.y, maxBoxWidth, xPadding, titleSize, "black");
+        drawTextHCenter(ctx, umlClass.x , umlClass.y + 4, maxBoxWidth, xPadding, titleSize, "black");
 
         var yOffset = umlClass.y + maxHeaderBoxSize;
         drawRectangle(ctx, umlClass.x, yOffset, maxBoxWidth, maxAttrBoxHeight, "black", "white");
@@ -108,6 +133,8 @@ const App: Component = () => {
           drawTextHLeft(ctx, umlClass.x, yOffset, xPadding, attr, "black");
           yOffset += attr.height;
         }
+
+        yOffset = umlClass.y + maxHeaderBoxSize + maxAttrBoxHeight;
 
         drawRectangle(ctx, umlClass.x, yOffset, maxBoxWidth, maxMethBoxHeight, "black", "white");
         for (var meth of methSizes) {
@@ -254,14 +281,6 @@ const App: Component = () => {
       }}
       class="relative min-h-screen max-h-screen">
       <ContextMenu hidden={!isContextMenuOpen()} items={contextMenuItems} location={locationContextMenu()}/>
-      <svg class="absolute h-screen w-full">
-        <defs>
-          <pattern id="bg-image" patternUnits="userSpaceOnUse" width="32" height="32" stroke="#0f172a" stroke-opacity=".2">
-            <path fill="none" d="M0 .5H31.5V32" />
-          </pattern>
-        </defs>
-        <rect fill="url(#bg-image)" stroke="black" width="100%" height="100%" />
-      </svg>
 
       <canvas
         ref={canvas} id="canny"

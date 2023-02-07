@@ -93,10 +93,14 @@ export const UMLMethodeContainer: Component<{
             class="relative flex flex-row bg-white rounded border border-sky-400 p-2 mb-2 shadow">
             <Show when={isExpanded()}>
                 <div class="flex flex-col">
-                    <Field title="Name"
+                    <Field 
+                        title="Name"
                         initValue={props.methode.name}
                         onInputChange={e => { props.methode.name = e.currentTarget.value; props.update() }} />
-                    <UMLAccessModifiersContainer id={`methode-${props.index}`} initValue={props.methode.accessModifier} onChange={(mod: AccessModifiers) => {props.methode.accessModifier = mod; props.update();}} />
+                    <UMLAccessModifiersContainer 
+                        id={`methode-${props.index}`} 
+                        initValue={props.methode.accessModifier} 
+                        onChange={(mod: AccessModifiers) => {props.methode.accessModifier = mod; props.update();}} />
                     <Field title="Return type"
                         initValue={props.methode.returnType}
                         onInputChange={e => { props.methode.returnType = e.currentTarget.value; props.update() }} />
@@ -120,8 +124,8 @@ export const UMLMethodeContainer: Component<{
             </label>
             </Show>
             <div class="absolute flex flex-row top-1.5 right-1">
-                <div class={isExpanded() ? 'group rotate-180' : 'group'} onClick={e => { setExpanded(!isExpanded()); console.log("expande");}}>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 shrink-0 fill-gray-500 group-hover:fill-black" fill="none" viewBox="0 0 20 20" >
+                <div class={isExpanded() ? 'group rotate-180' : 'group'} onClick={e => setExpanded(!isExpanded())}>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 shrink-0 fill-gray-500 group-hover:fill-black group-hover:shadow" fill="none" viewBox="0 0 20 20" >
                         <path strokeLinecap="round" strokeLinejoin="round" d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' />
                     </svg>
                 </div>
