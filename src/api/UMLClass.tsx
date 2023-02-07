@@ -1,5 +1,6 @@
 import { StringBuilder } from "./StringBuilder";
 import { UMLAttribute } from "./UMLAttribute";
+import { UMLMethode } from "./UMLMethode";
 
 export interface IUMLClass {
   x?: number;
@@ -9,6 +10,7 @@ export interface IUMLClass {
   name: string;
   isAbstract?: boolean;
   attributes: UMLAttribute[];
+  methodes: UMLMethode[];
   toString() : string;
 }
 
@@ -20,12 +22,14 @@ export class UMLClass implements IUMLClass {
   name: string;
   isAbstract?: boolean;
   attributes: UMLAttribute[];
+  methodes: UMLMethode[];
 
   constructor() { 
     this.x = 0;
     this.y = 0;
     this.name = "Peter";
     this.attributes = [];
+    this.methodes = [];
   }
 
   toString():string {
