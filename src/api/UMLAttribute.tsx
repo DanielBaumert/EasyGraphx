@@ -64,7 +64,7 @@ export const UMLAttributeContainer: Component<{
                     <Field title="Name"
                         initValue={props.attr.name}
                         onInputChange={e => { props.attr.name = e.currentTarget.value; props.update() }} />
-                    <UMLAccessModifiersContainer onChange={(mod: AccessModifiers) => {props.attr.accessModifier = mod; props.update();}} />
+                    <UMLAccessModifiersContainer initValue={props.attr.accessModifier} onChange={(mod: AccessModifiers) => {props.attr.accessModifier = mod; props.update();}} />
                     <Field title="Type"
                         initValue={props.attr.type}
                         onInputChange={e => { props.attr.type = e.currentTarget.value; props.update() }} />

@@ -1,4 +1,4 @@
-import { Component, createSignal, JSX } from "solid-js";
+import { Component, createSignal, JSX, onMount } from "solid-js";
 import { CheckBox } from "./CheckBox";
 
 export enum AccessModifiers { 
@@ -13,9 +13,10 @@ export interface IUMLAccessModifiers {
 }
 
 export const UMLAccessModifiersContainer : Component<{
+    initValue?: AccessModifiers,
     onChange: Function
 }> = (props) => { 
-    const [accessModifier, setAccessModifier] = createSignal<AccessModifiers>();
+    const [accessModifier, setAccessModifier] = createSignal<AccessModifiers>(props.initValue);
 
     function updateAccessModifier(modifiers:AccessModifiers) { 
         var state = accessModifier() != modifiers ? modifiers : undefined;
