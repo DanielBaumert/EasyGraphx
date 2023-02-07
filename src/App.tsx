@@ -1,60 +1,67 @@
 import { Component, createEffect, createSignal, For, JSX, on, onMount, Show } from 'solid-js';
 import { createStore } from "solid-js/store";
+import { Button } from './api/Button';
 import { CheckBox } from './api/CheckBox';
+import { ContextMenu, ItemInfo } from './api/ContextMenu';
 import { drawTextHCenter, mesureText, drawRectangle, drawTextHLeft, Point } from './api/DrawUtils';
 import { Field } from './api/Field';
 import { UMLAttribute, UMLAttributeContainer } from './api/UMLAttribute';
 import { UMLClass } from './api/UMLClass';
 import { UMLMethode, UMLMethodeContainer } from './api/UMLMethode';
 
-
-const [store, setStore] = createStore<{ classes: UMLClass[], mouse: Point, readyToMove: boolean }>({
+const [store, setStore] = createStore<
+  { 
+    classes:UMLClass[],
+    mouse: Point, 
+    readyToMove: boolean 
+  }>({
   classes: [],
   mouse: { x: 0, y: 0 },
   readyToMove: false
 });
 
+// var exampleClass = new UMLClass();
+// exampleClass.isAbstract = true;
+// exampleClass.attributes.push(new UMLAttribute());
+// exampleClass.attributes.push(new UMLAttribute());
+// exampleClass.attributes.push(new UMLAttribute());
+// var exampleMethode = new UMLMethode();
+// exampleMethode.name = "Abc";
+// exampleMethode.returnType = "Integer";
+// exampleClass.methodes.push(exampleMethode);
+// exampleClass.methodes.push(exampleMethode);
+// exampleClass.methodes.push(exampleMethode);
+// exampleClass.methodes.push(exampleMethode);
 
-var exampleClass = new UMLClass();
-exampleClass.isAbstract = true;
-exampleClass.attributes.push(new UMLAttribute());
-exampleClass.attributes.push(new UMLAttribute());
-exampleClass.attributes.push(new UMLAttribute());
-var exampleMethode = new UMLMethode();
-exampleMethode.name = "Abc";
-exampleMethode.returnType = "Integer";
-exampleClass.methodes.push(exampleMethode);
-exampleClass.methodes.push(exampleMethode);
-exampleClass.methodes.push(exampleMethode);
-exampleClass.methodes.push(exampleMethode);
-
-setStore(
-  "classes",
-  (classes) => {
-    classes.push(exampleClass)
-    return classes;
-  });
 
 const Label: Component<{ title: string }> = (props) =>
   <label class=" text-sm font-medium text-gray-700 w-100-full">{props.title}</label>
 
-const Button: Component<{ title: string, onclick: JSX.EventHandlerUnion<HTMLButtonElement, MouseEvent> }> = (props) => (
-  <button class="
-        py-1 w-full rounded mb-1 
-        border border-gray-200 
-        text-sm font-medium text-gray-700 
-        hover:bg-gradient-to-r hover:from-cyan-500 hover:to-blue-500 hover:text-white hover:shadow"
-    onclick={props.onclick}>
-    {props.title}
-  </button>)
 
 var canDraw: boolean = true;
 var changingsObserved: boolean = true;
 
-
 const App: Component = () => {
+  const contextMenuItems:ItemInfo[] = [
+  {
+      title: "Add Class",
+      onclick: (e) => {
+        const newClass = new UMLClass(locationContextMenu());
+        setStore( "classes", store.classes.length, newClass);
+        updateView();
+      }
+    }, {
+      title: "Save image",
+      onclick: () => {}
+    }
+  ]
+  
   const [currentClass, setCurrentClass] = createSignal<UMLClass>(undefined, { equals: false });
+  const [isContextMenuOpen, setContextMenuOpen] = createSignal<boolean>(false);
+  const [locationContextMenu, setLocationContextMenu] = createSignal<Point>(undefined);
+  
   let canvas: HTMLCanvasElement;
+  
   onMount(() => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -118,19 +125,7 @@ const App: Component = () => {
       changingsObserved = false;
     }
     requestAnimationFrame(() => render(ctx));
-
-
   }
-
-  // function emptyCurrentClass() { 
-  //   setCurrentClass(
-  //     ,
-  //     (attrs) => { 
-  //       attrs.push(attr);
-  //       return attrs;
-  //     } 
-  //   )
-  // }
 
   /*
    * Attribute management 
@@ -182,12 +177,9 @@ const App: Component = () => {
     setCurrentClass(currentClass());
     updateView();
   }
-
-
-
-
-
-
+  /*
+   * End - Methode management
+   */
   function updateReadyToMove(state: boolean) {
     setStore("readyToMove", (readyToMove) => {
       readyToMove = state;
@@ -246,15 +238,22 @@ const App: Component = () => {
     }
   }
 
-  // createEffect(
-  //   on(
-  //     () => currentClass(),
-  //     (value) => {
-  //       return value;
-  // }));
+  function onCanvasContextMenu(e:MouseEvent) {
+    e.preventDefault();
+    setLocationContextMenu({x: e.x, y: e.y});
+    setContextMenuOpen(true);
+  }
+
 
   return (
-    <div class="relative min-h-screen max-h-screen">
+    <div
+      onClick={e => {
+        if(isContextMenuOpen()){
+          setContextMenuOpen(false);
+        }
+      }}
+      class="relative min-h-screen max-h-screen">
+      <ContextMenu hidden={!isContextMenuOpen()} items={contextMenuItems} location={locationContextMenu()}/>
       <svg class="absolute h-screen w-full">
         <defs>
           <pattern id="bg-image" patternUnits="userSpaceOnUse" width="32" height="32" stroke="#0f172a" stroke-opacity=".2">
@@ -270,6 +269,7 @@ const App: Component = () => {
         onmousedown={onCanvasMouseDown}
         onmousemove={onCanvasMouseMove}
         onmouseup={onCanvasMouseUp}
+        onContextMenu={onCanvasContextMenu}
         onchange={() => {
           canvas.width = window.innerWidth;
           canvas.height = window.innerHeight;

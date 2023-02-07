@@ -1,3 +1,4 @@
+import { Point } from "./DrawUtils";
 import { StringBuilder } from "./StringBuilder";
 import { UMLAttribute } from "./UMLAttribute";
 import { UMLMethode } from "./UMLMethode";
@@ -24,9 +25,9 @@ export class UMLClass implements IUMLClass {
   attributes: UMLAttribute[];
   methodes: UMLMethode[];
 
-  constructor() { 
-    this.x = 0;
-    this.y = 0;
+  constructor(location: Point) { 
+    this.x = location.x;
+    this.y = location.y;
     this.name = "Peter";
     this.attributes = [];
     this.methodes = [];
