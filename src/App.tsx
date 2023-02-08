@@ -3,7 +3,7 @@ import { cancelCallback, Component, createEffect, createSignal, For, JSX, on, on
 import { createStore } from "solid-js/store";
 import { Button } from './api/Button';
 import { CheckBox } from './api/CheckBox';
-import { ContextMenu, ItemInfo } from './api/ContextMenu';
+import { ContextMenu, ItemInfo, NavItem } from './api/ContextMenu';
 import { drawTextHCenter, measureText, drawRectangle, drawTextHLeft, Point, SingleTextBlock, strokeRectangle, drawLine } from './api/DrawUtils';
 import { Field } from './api/Field';
 import { UMLAttribute, UMLAttributeContainer } from './api/UMLAttribute';
@@ -11,17 +11,17 @@ import { UMLClass } from './api/UMLClass';
 import { UMLMethode, UMLMethodeContainer } from './api/UMLMethode';
 
 const [store, setStore] = createStore<
-  { 
-    classes:UMLClass[],
-    mouse: Point, 
+  {
+    classes: UMLClass[],
+    mouse: Point,
     readyToMove: boolean,
     viewOffset: Point
   }>({
-  classes: [],
-  mouse: { x: 0, y: 0 },
-  readyToMove: false,
-  viewOffset: {x: 0, y: 0}
-});
+    classes: [],
+    mouse: { x: 0, y: 0 },
+    readyToMove: false,
+    viewOffset: { x: 0, y: 0 }
+  });
 
 // var exampleClass = new UMLClass();
 // exampleClass.isAbstract = true;
@@ -46,123 +46,18 @@ const App: Component = () => {
   const [currentClass, setCurrentClass] = createSignal<UMLClass>(undefined, { equals: false });
   const [isContextMenuOpen, setContextMenuOpen] = createSignal<boolean>(false);
   const [locationContextMenu, setLocationContextMenu] = createSignal<Point>(undefined);
-  
+
   let frameNumber: number;
   let canvas: HTMLCanvasElement;
 
-  const contextMenuItems:ItemInfo[] = [
-  {
-      title: "Add Class",
-      hidden: false,
-      onclick: (e) => {
-        const newClass = new UMLClass(locationContextMenu());
-        setStore("classes", store.classes.length, newClass);
-        updateView();
-      }
-    }, {
-      title: "Save image",
-      hidden: false,
-      onclick: (e) => {
-          const link = document.createElement("a");
-          link.download = 'download.png';
-          link.href = canvas.toDataURL();
-          link.click();
-          link.remove();
-      }
-    }, {
-      title: "Save state",
-      hidden: false,
-      onclick: (e) => {
-          const link = document.createElement("a");
-          var file = new Blob(
-            [JSON.stringify(store.classes)], 
-            {type: 'application/json;charset=utf-8'});
-          link.download = 'config.json';
-          link.href = URL.createObjectURL(file);
-          link.click();
-          link.remove();
-      }
-    }, {
-      title: "Load saved state",
-      hidden: false,
-      onclick:  (e) => {
-          const fileLoader = document.createElement("input");
-          fileLoader["type"] = "file";
-          fileLoader["accept"] = "application/json";
-          
-          fileLoader.addEventListener('change', async e => {
-            if(fileLoader.files.length > 1){
-              return;
-            } 
-
-            if(fileLoader.files.length != 1){
-              return;
-            }
-
-            var file = fileLoader.files[0];
-            var buffer = await file.arrayBuffer();
-            var content = new TextDecoder("utf-8").decode(buffer);
-            var jsonArray = JSON.parse(content);
-            
-            setStore("classes", []);
-            for(var element of jsonArray){ 
-              const cls = new UMLClass({
-                x: element["x"] ?? 0,
-                y: element["y"] ?? 0
-              });
-              cls.name = element["name"],
-              cls.width = element["width"];
-              cls.height = element["height"];
-              cls.isAbstract =  element["isAbstract"] ?? false;
-              cls.attributes = [];
-              for(var attrElement of element["attributes"] ?? [])
-              {
-                 const attr:UMLAttribute = new UMLAttribute();
-                 attr.isStatic = attrElement["isStatic"] ?? false;
-                 attr.isConstant = attrElement["isConstant"] ?? false;
-                 attr.accessModifier = attrElement["accessModifier"] ?? undefined;
-                 attr.name = attrElement["name"];
-                 attr.type = attrElement["type"] ?? undefined;
-                 attr.multiplicity = attrElement["multiplicity"] ?? undefined;
-                 attr.defaultValue = attrElement["defaultValue"] ?? undefined;
-
-                 cls.attributes.push(attr);
-              }
-              cls.methodes = [];
-              for(var methElement of element["methodes"] ?? []) { 
-                const meth:UMLMethode = new UMLMethode();
-
-                meth.isStatic = methElement["isStatic"] ?? false;
-                meth.name = methElement["name"] ?? "methode";
-                meth.returnType = methElement["returnType"] ?? undefined;
-                meth.accessModifier = methElement["accessModifier"] ?? undefined;
-                meth.parameters = methElement["parameters"] ?? undefined;
-                
-                cls.methodes.push(meth);
-              }
-
-              setStore(
-                "classes",
-                store.classes.length, 
-                cls);
-            }
-            
-            updateView();
-          })
-
-          fileLoader.click();
-          fileLoader.remove();
-      }
-    }
-  ]
 
   onMount(() => {
-    window.addEventListener("resize", e => { 
+    window.addEventListener("resize", e => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
       changingsObserved = true;
     });
-  
+
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     const ctx = canvas.getContext("2d");
@@ -178,16 +73,16 @@ const App: Component = () => {
       ctx.imageSmoothingQuality = 'high';
       ctx.imageSmoothingEnabled = true;
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-      
+
       const clusterSize = 24;
       const clusterColor = "#00505033";
       const xClusterShift = (store.viewOffset.x % clusterSize);
       const yClusterShift = (store.viewOffset.y % clusterSize);
 
-      for(var x = 0 + xClusterShift; x < canvas.width; x += clusterSize){ 
+      for (var x = 0 + xClusterShift; x < canvas.width; x += clusterSize) {
         drawLine(ctx, x, 0, x, canvas.height, clusterColor);
       }
-      for(var y = 0 + yClusterShift; y < canvas.height; y += clusterSize){ 
+      for (var y = 0 + yClusterShift; y < canvas.height; y += clusterSize) {
         drawLine(ctx, 0, y, canvas.width, y, clusterColor);
       }
 
@@ -198,16 +93,16 @@ const App: Component = () => {
         var xPadding = 16;
 
         var titleSize = measureText(ctx, umlClass.toString());
-        var attrSizes = umlClass.attributes?.map(x => { 
+        var attrSizes = umlClass.attributes?.map(x => {
           var measuredText = measureText(ctx, x.toString());
-          if(measuredText instanceof SingleTextBlock){ 
+          if (measuredText instanceof SingleTextBlock) {
             measuredText.decoration.underline = x.isStatic ?? false;
           }
           return measuredText;
         }) ?? [];
-        var methSizes = umlClass.methodes?.map(x => { 
+        var methSizes = umlClass.methodes?.map(x => {
           var measuredText = measureText(ctx, x.toString());
-          if(measuredText instanceof SingleTextBlock){ 
+          if (measuredText instanceof SingleTextBlock) {
             measuredText.decoration.underline = x.isStatic ?? false;
           }
           return measuredText;
@@ -221,11 +116,11 @@ const App: Component = () => {
         var maxAttrBoxHeight = Math.max(attrSizes?.reduce((p, c) => p + c.height, 0), 10);
         var maxMethBoxHeight = Math.max(methSizes?.reduce((p, c) => p + c.height, 0), 10);
 
-        const xClassOffset =  store.viewOffset.x + umlClass.x;
-        const yClassOffset =  store.viewOffset.y + umlClass.y;
+        const xClassOffset = store.viewOffset.x + umlClass.x;
+        const yClassOffset = store.viewOffset.y + umlClass.y;
 
         drawRectangle(ctx, xClassOffset, yClassOffset, maxBoxWidth, maxHeaderBoxSize, "black", "white");
-        drawTextHCenter(ctx, xClassOffset , yClassOffset + 4, maxBoxWidth, xPadding, titleSize, "black");
+        drawTextHCenter(ctx, xClassOffset, yClassOffset + 4, maxBoxWidth, xPadding, titleSize, "black");
 
         var yOffset = yClassOffset + maxHeaderBoxSize;
         drawRectangle(ctx, xClassOffset, yOffset, maxBoxWidth, maxAttrBoxHeight, "black", "white");
@@ -248,7 +143,7 @@ const App: Component = () => {
 
       changingsObserved = false;
     }
-   
+
     frameNumber = requestAnimationFrame(() => render(ctx));
   }
 
@@ -320,26 +215,33 @@ const App: Component = () => {
   }
 
   function updateMousePos(mouseEvent: MouseEvent) {
-    setStore("mouse", (mouse) => {
-      mouse.x = mouseEvent.x;
-      mouse.y = mouseEvent.y;
-      return mouse;
-    });
+    setStore("mouse", mouseEvent);
   }
 
+  function findClassAt(position: { x: number, y: number }): UMLClass {
+    for (var umlClass of store.classes) {
+      const mouseViewX = position.x - store.viewOffset.x;
+      const mouseViewY = position.y - store.viewOffset.y;
+
+      if (umlClass.x <= mouseViewX && mouseViewX <= umlClass.x + umlClass.width
+        && umlClass.y <= mouseViewY && mouseViewY <= umlClass.y + umlClass.height) {
+        return umlClass;
+      }
+    }
+    return undefined;
+  }
+
+  /*
+   * Canvas
+   */
   function onCanvasMouseDown(e: MouseEvent) {
     setCurrentClass();
     if (e.buttons === 1) {
       updateMousePos(e);
-      for (var umlClass of store.classes) {
-        const mouseViewX = e.x - store.viewOffset.x;
-        const mouseViewY = e.y - store.viewOffset.y;
-
-        if (umlClass.x <= mouseViewX && mouseViewX <= umlClass.x + umlClass.width
-          && umlClass.y <= mouseViewY && mouseViewY <= umlClass.y + umlClass.height) {
-          updateReadyToMove(true);
-          setCurrentClass(umlClass);
-        }
+      var umlClass = findClassAt(e);
+      if (umlClass) {
+        updateReadyToMove(true);
+        setCurrentClass(umlClass);
       }
     }
 
@@ -349,20 +251,20 @@ const App: Component = () => {
     if (e.buttons === 1) {
       var deltaX = e.x - store.mouse.x;
       var deltaY = e.y - store.mouse.y;
-      if(currentClass() && store.readyToMove) {
+      if (currentClass() && store.readyToMove) {
         currentClass().x += deltaX;
         currentClass().y += deltaY;
 
         setCurrentClass(currentClass());
         updateView();
-      } else { 
+      } else {
         setStore(
-          "viewOffset", 
+          "viewOffset",
           {
             x: store.viewOffset.x + deltaX,
             y: store.viewOffset.y + deltaY
           })
-          updateView();
+        updateView();
       }
     }
 
@@ -375,29 +277,148 @@ const App: Component = () => {
     }
   }
 
-  function onCanvasContextMenu(e:MouseEvent) {
+  function onCanvasContextMenu(e: MouseEvent) {
     e.preventDefault();
-    setLocationContextMenu({x: e.x, y: e.y});
+    var umlClass = findClassAt(e);
+    setCurrentClass(umlClass);
+    setLocationContextMenu(e);
     setContextMenuOpen(true);
+  }
+
+  /*
+   * Context Menu
+   */
+  function onContextMenuAddClass() {
+    const newClass = new UMLClass(locationContextMenu());
+    setStore("classes", store.classes.length, newClass);
+    updateView()
+  }
+
+  function onContextMenuRemoveClass() { 
+    setStore(
+      "classes", 
+      store.classes.filter(x => x.uuid !== currentClass().uuid));
+    updateView();
+  }
+
+  function onContextMenuSaveImage() {
+    const link = document.createElement("a");
+    link.download = 'download.png';
+    link.href = canvas.toDataURL();
+    link.click();
+    link.remove();
+  }
+
+  function onContextMenuSaveState() {
+    const link = document.createElement("a");
+    var file = new Blob(
+      [JSON.stringify(store.classes)],
+      { type: 'application/json;charset=utf-8' });
+    link.download = 'config.json';
+    link.href = URL.createObjectURL(file);
+    link.click();
+    link.remove();
+  }
+
+  function onContextMenuLoadState() {
+    const fileLoader = document.createElement("input");
+    fileLoader["type"] = "file";
+    fileLoader["accept"] = "application/json";
+
+    fileLoader.addEventListener('change', async e => {
+      if (fileLoader.files.length > 1) {
+        return;
+      }
+
+      if (fileLoader.files.length != 1) {
+        return;
+      }
+
+      var file = fileLoader.files[0];
+      var buffer = await file.arrayBuffer();
+      var content = new TextDecoder("utf-8").decode(buffer);
+      var jsonArray = JSON.parse(content);
+
+      setStore("classes", []);
+      for (var element of jsonArray) {
+        const cls = new UMLClass({
+          x: element["x"] ?? 0,
+          y: element["y"] ?? 0
+        });
+        cls.name = element["name"],
+          cls.width = element["width"];
+        cls.height = element["height"];
+        cls.isAbstract = element["isAbstract"] ?? false;
+        cls.attributes = [];
+        for (var attrElement of element["attributes"] ?? []) {
+          const attr: UMLAttribute = new UMLAttribute();
+          attr.isStatic = attrElement["isStatic"] ?? false;
+          attr.isConstant = attrElement["isConstant"] ?? false;
+          attr.accessModifier = attrElement["accessModifier"] ?? undefined;
+          attr.name = attrElement["name"];
+          attr.type = attrElement["type"] ?? undefined;
+          attr.multiplicity = attrElement["multiplicity"] ?? undefined;
+          attr.defaultValue = attrElement["defaultValue"] ?? undefined;
+
+          cls.attributes.push(attr);
+        }
+        cls.methodes = [];
+        for (var methElement of element["methodes"] ?? []) {
+          const meth: UMLMethode = new UMLMethode();
+
+          meth.isStatic = methElement["isStatic"] ?? false;
+          meth.name = methElement["name"] ?? "methode";
+          meth.returnType = methElement["returnType"] ?? undefined;
+          meth.accessModifier = methElement["accessModifier"] ?? undefined;
+          meth.parameters = methElement["parameters"] ?? undefined;
+
+          cls.methodes.push(meth);
+        }
+
+        setStore(
+          "classes",
+          store.classes.length,
+          cls);
+      }
+
+      updateView();
+    });
+
+    fileLoader.click();
+    fileLoader.remove();
   }
 
   return (
     <div
       onClick={e => {
-        if(isContextMenuOpen()){
+        if (isContextMenuOpen()) {
           setContextMenuOpen(false);
         }
       }}
       class="relative min-h-screen max-h-screen">
-      <ContextMenu hidden={!isContextMenuOpen()} items={contextMenuItems} location={locationContextMenu()}/>
-
+      <ContextMenu
+        hidden={!isContextMenuOpen()}
+        location={locationContextMenu()} >
+        <NavItem title={"Add Class"}
+          onclick={onContextMenuAddClass} />
+        <NavItem title="Delete class"
+          hidden={currentClass() === undefined}
+          onclick={onContextMenuRemoveClass} />
+        <NavItem title="Save image"
+          onclick={onContextMenuSaveImage} />
+        <NavItem title="Save state"
+          onclick={onContextMenuSaveState} />
+        <NavItem
+          title="Load saved state"
+          onclick={onContextMenuLoadState} />
+      </ContextMenu>
       <canvas
         ref={canvas} id="canny"
         class='absolute bg-transparent'
         onmousedown={onCanvasMouseDown}
         onmousemove={onCanvasMouseMove}
         onmouseup={onCanvasMouseUp}
-        onContextMenu={onCanvasContextMenu}/>
+        onContextMenu={onCanvasContextMenu} />
       <Show when={currentClass()}>
         <div id="side-nav" class="fixed flex min-h-screen max-h-screen top-0 right-0 p-4 min-w-[269px]">
           <div class="flex grow flex-col gap-4 ">

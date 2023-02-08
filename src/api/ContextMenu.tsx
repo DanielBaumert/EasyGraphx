@@ -1,7 +1,13 @@
-import { Component, createSignal, For, JSX } from "solid-js";
+import { Component, createSignal, For, JSX, ParentComponent } from "solid-js";
 import { Point } from "./DrawUtils";
 
-const NavItem : Component<ItemInfo> = (props) => (
+export type ItemInfo = { 
+    title: string,
+    hidden?: boolean,
+    onclick: JSX.EventHandlerUnion<HTMLButtonElement, MouseEvent> 
+}
+
+export const NavItem : Component<ItemInfo> = (props) => (
     <button class="
         bg-white
         px-8 py-2 w-full
@@ -10,19 +16,12 @@ const NavItem : Component<ItemInfo> = (props) => (
         text-sm font-medium text-gray-700 
         hover:bg-gradient-to-r hover:from-cyan-500 hover:to-blue-500 
         hover:text-white"
-        hidden={props.hidden}
+        hidden={props.hidden ?? false}
         onclick={props.onclick}>
         {props.title}
     </button>);
 
-export type ItemInfo = { 
-    title: string,
-    hidden: boolean,
-    onclick: JSX.EventHandlerUnion<HTMLButtonElement, MouseEvent> 
-}
-
-export const ContextMenu : Component<{
-    items: ItemInfo[],
+export const ContextMenu : ParentComponent<{
     location: Point,
     hidden:boolean
 }> = (props) => { 
@@ -35,12 +34,7 @@ export const ContextMenu : Component<{
                 left: `${props.location?.x ?? 0}px`,
                 top: `${props.location?.y ?? 0}px`
             }}>
-            <For each={props.items}>
-                {(item) => <NavItem 
-                    hidden={props.hidden}
-                    title={item.title}
-                    onclick={item.onclick}/>}
-            </For>
+            {props.children}
         </div>
     );
 }

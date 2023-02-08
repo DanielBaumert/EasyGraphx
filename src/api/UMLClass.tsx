@@ -16,6 +16,7 @@ export interface IUMLClass {
 }
 
 export class UMLClass implements IUMLClass {
+  uuid: string;
   x: number;
   y: number;
   width?: number;
@@ -26,6 +27,7 @@ export class UMLClass implements IUMLClass {
   methodes: UMLMethode[];
 
   constructor(location: Point) { 
+    this.uuid = crypto.randomUUID();
     this.x = location.x;
     this.y = location.y;
     this.name = "class";
