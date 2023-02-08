@@ -1,3 +1,24 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+/* width */
+::-webkit-scrollbar {
+    width: .75rem;
+    margin-right: 500px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-left: 0.25rem solid #ffffff;
+    background-clip: padding-box;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+    background: rgb(56 189 248 / var(--tw-border-opacity));
+    border-left: 0.25rem solid #ffffff;
+    background-clip: padding-box;
+}
