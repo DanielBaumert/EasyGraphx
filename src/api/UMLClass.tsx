@@ -28,7 +28,7 @@ export class UMLClass implements IUMLClass {
   constructor(location: Point) { 
     this.x = location.x;
     this.y = location.y;
-    this.name = "Peter";
+    this.name = "class";
     this.attributes = [];
     this.methodes = [];
   }

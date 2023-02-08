@@ -12,7 +12,6 @@ export interface IUmlAttribute extends IUMLAccessModifiers {
     type?: string;
     multiplicity?: number;
     defaultValue?: string;
-    properties?: string[];
     toString(): string;
 }
 
@@ -24,7 +23,6 @@ export class UMLAttribute implements IUmlAttribute {
     type?: string;
     multiplicity?: number;
     defaultValue?: string;
-    properties?: string[];
 
     constructor() {
         this.name = "attribute";
@@ -35,9 +33,12 @@ export class UMLAttribute implements IUmlAttribute {
         if(this.accessModifier){ 
             sb.write(this.accessModifier).write(" ");
         }
-        sb.write(this.name);
+        sb.write(this.isConstant ? this.name.toUpperCase() : this.name);
         if (this.type) {
             sb.write(':').write(this.type);
+        }
+        if(this.defaultValue) { 
+            sb.write('=').write(this.defaultValue);
         }
         return sb.toString();
     }

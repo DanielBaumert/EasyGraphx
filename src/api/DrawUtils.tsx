@@ -7,7 +7,6 @@ export type TextDecoration = {
     underline:boolean
 }
 
-
 export function drawTextHCenter(
     ctx: CanvasRenderingContext2D, 
     xBox: number, yBox: number, 
