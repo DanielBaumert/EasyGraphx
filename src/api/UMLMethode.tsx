@@ -1,5 +1,6 @@
 import { Component, createSignal, Show } from "solid-js";
 import { JSX } from "solid-js/jsx-runtime";
+import { CheckBox } from "./CheckBox";
 import { Field } from "./Field";
 import { StringBuilder } from "./StringBuilder";
 import { AccessModifiers, IUMLAccessModifiers, UMLAccessModifiersContainer } from "./UMLAccessModifiers";
@@ -97,6 +98,11 @@ export const UMLMethodeContainer: Component<{
                         title="Name"
                         initValue={props.methode.name}
                         onInputChange={e => { props.methode.name = e.currentTarget.value; props.update() }} />
+                    <CheckBox 
+                        id={`static-methode-${props.index}`} 
+                        title="Static"
+                        value={props.methode.isStatic}
+                        onChanges={e => {props.methode.isStatic = e.currentTarget.checked; props.update();}}/>  
                     <UMLAccessModifiersContainer 
                         id={`methode-${props.index}`} 
                         initValue={props.methode.accessModifier} 
