@@ -150,3 +150,16 @@ export function strokeRectangle(
     ctx.strokeStyle = color;
     ctx.strokeRect(x, y, w, h);
 }
+
+export function drawLine(
+    ctx:CanvasRenderingContext2D, 
+    xStart: number, yStart: number, 
+    xEnd: number, yEnd: number, 
+    color: string|CanvasGradient|CanvasPattern) 
+{ 
+    ctx.beginPath();
+    ctx.strokeStyle = color,
+    ctx.moveTo(xStart, yStart);
+    ctx.lineTo(xEnd, yEnd);
+    ctx.stroke();
+}

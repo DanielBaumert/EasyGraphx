@@ -10,12 +10,14 @@ const NavItem : Component<ItemInfo> = (props) => (
         text-sm font-medium text-gray-700 
         hover:bg-gradient-to-r hover:from-cyan-500 hover:to-blue-500 
         hover:text-white"
+        hidden={props.hidden}
         onclick={props.onclick}>
         {props.title}
     </button>);
 
 export type ItemInfo = { 
     title: string,
+    hidden: boolean,
     onclick: JSX.EventHandlerUnion<HTMLButtonElement, MouseEvent> 
 }
 
@@ -34,7 +36,10 @@ export const ContextMenu : Component<{
                 top: `${props.location?.y ?? 0}px`
             }}>
             <For each={props.items}>
-                {(item) => <NavItem title={item.title} onclick={item.onclick}/>}
+                {(item) => <NavItem 
+                    hidden={props.hidden}
+                    title={item.title}
+                    onclick={item.onclick}/>}
             </For>
         </div>
     );

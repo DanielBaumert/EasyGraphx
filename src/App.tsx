@@ -4,7 +4,7 @@ import { createStore } from "solid-js/store";
 import { Button } from './api/Button';
 import { CheckBox } from './api/CheckBox';
 import { ContextMenu, ItemInfo } from './api/ContextMenu';
-import { drawTextHCenter, measureText, drawRectangle, drawTextHLeft, Point, SingleTextBlock, strokeRectangle } from './api/DrawUtils';
+import { drawTextHCenter, measureText, drawRectangle, drawTextHLeft, Point, SingleTextBlock, strokeRectangle, drawLine } from './api/DrawUtils';
 import { Field } from './api/Field';
 import { UMLAttribute, UMLAttributeContainer } from './api/UMLAttribute';
 import { UMLClass } from './api/UMLClass';
@@ -53,6 +53,7 @@ const App: Component = () => {
   const contextMenuItems:ItemInfo[] = [
   {
       title: "Add Class",
+      hidden: false,
       onclick: (e) => {
         const newClass = new UMLClass(locationContextMenu());
         setStore("classes", store.classes.length, newClass);
@@ -60,6 +61,7 @@ const App: Component = () => {
       }
     }, {
       title: "Save image",
+      hidden: false,
       onclick: (e) => {
           const link = document.createElement("a");
           link.download = 'download.png';
@@ -69,6 +71,7 @@ const App: Component = () => {
       }
     }, {
       title: "Save state",
+      hidden: false,
       onclick: (e) => {
           const link = document.createElement("a");
           var file = new Blob(
@@ -81,10 +84,12 @@ const App: Component = () => {
       }
     }, {
       title: "Load saved state",
+      hidden: false,
       onclick:  (e) => {
-          var fileLoader = document.createElement("input");
+          const fileLoader = document.createElement("input");
           fileLoader["type"] = "file";
           fileLoader["accept"] = "application/json";
+          
           fileLoader.addEventListener('change', async e => {
             if(fileLoader.files.length > 1){
               return;
@@ -93,10 +98,12 @@ const App: Component = () => {
             if(fileLoader.files.length != 1){
               return;
             }
+
             var file = fileLoader.files[0];
             var buffer = await file.arrayBuffer();
             var content = new TextDecoder("utf-8").decode(buffer);
             var jsonArray = JSON.parse(content);
+            
             setStore("classes", []);
             for(var element of jsonArray){ 
               const cls = new UMLClass({
@@ -142,6 +149,7 @@ const App: Component = () => {
             
             updateView();
           })
+
           fileLoader.click();
           fileLoader.remove();
       }
@@ -176,11 +184,11 @@ const App: Component = () => {
       const xClusterShift = (store.viewOffset.x % clusterSize);
       const yClusterShift = (store.viewOffset.y % clusterSize);
 
-      for(var x = 0 + xClusterShift; x < canvas.width; x+=clusterSize){ 
-        strokeRectangle(ctx, x, 0, 0.5, canvas.height, clusterColor);
+      for(var x = 0 + xClusterShift; x < canvas.width; x += clusterSize){ 
+        drawLine(ctx, x, 0, x, canvas.height, clusterColor);
       }
-      for(var y = 0 + yClusterShift; y < canvas.height; y+=clusterSize){ 
-        strokeRectangle(ctx, 0, y, canvas.width, 0.5, clusterColor);
+      for(var y = 0 + yClusterShift; y < canvas.height; y += clusterSize){ 
+        drawLine(ctx, 0, y, canvas.width, y, clusterColor);
       }
 
       ctx.strokeStyle = "black";
