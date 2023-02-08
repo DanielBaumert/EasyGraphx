@@ -1,10 +1,12 @@
 import { Component, createSignal, JSX, Show } from "solid-js";
+import { CheckBox } from "./CheckBox";
 import { Field } from "./Field";
 import { StringBuilder } from "./StringBuilder";
 import { AccessModifiers, IUMLAccessModifiers, UMLAccessModifiersContainer } from "./UMLAccessModifiers";
 
 export interface IUmlAttribute extends IUMLAccessModifiers {
     isStatic?: boolean;
+    isConstant?: boolean;
     accessModifier?: AccessModifiers;
     name: string;
     type?: string;
@@ -16,6 +18,7 @@ export interface IUmlAttribute extends IUMLAccessModifiers {
 
 export class UMLAttribute implements IUmlAttribute {
     isStatic?: boolean;
+    isConstant?: boolean;
     accessModifier?: AccessModifiers;
     name: string;
     type?: string;
@@ -64,6 +67,18 @@ export const UMLAttributeContainer: Component<{
                     <Field title="Name"
                         initValue={props.attr.name}
                         onInputChange={e => { props.attr.name = e.currentTarget.value; props.update() }} />
+                    <div class="grid grid-cols-2">
+                        <CheckBox 
+                            id={`static-attribute-${props.index}`} 
+                            title="Static"
+                            value={props.attr.isStatic}
+                            onChanges={e => {props.attr.isStatic = e.currentTarget.checked; props.update();}}/>  
+                        <CheckBox 
+                            id={`constant-attribute-${props.index}`} 
+                            title="Constant"
+                            value={props.attr.isConstant}
+                            onChanges={e => {props.attr.isConstant = e.currentTarget.checked; props.update();}}/> 
+                    </div>
                     <UMLAccessModifiersContainer 
                         id={`attribute-${props.index}`}
                         initValue={props.attr.accessModifier} 
