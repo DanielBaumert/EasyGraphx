@@ -3,6 +3,10 @@ export type Point = {
     y:number;
 }
 
+export type TextDecoration = { 
+    underline:boolean
+}
+
 
 export function drawTextHCenter(
     ctx: CanvasRenderingContext2D, 
@@ -34,9 +38,16 @@ export function drawTextHLeft(
     text: ITextBlock<string|SingleTextBlock[]>, 
     color: string|CanvasGradient|CanvasPattern): void
 {
+    ctx.strokeStyle = "black";
     ctx.fillStyle = color;
     if(text instanceof SingleTextBlock ) { 
-        ctx.fillText(text.value, xBox+ (xPadding / 2), yBox  + text.baseline);
+        var xText = xBox + (xPadding / 2);
+        var yText = yBox + text.baseline;
+        ctx.fillText(text.value, xText, yText);
+        if(text.decoration.underline){ 
+            console.log("static");
+            ctx.strokeRect(xText, yText + 2, text.width, .5);
+        }
     } 
     else if(text instanceof MultiTextBlock) 
     { 
@@ -57,13 +68,15 @@ export class SingleTextBlock implements ITextBlock<string> {
     value: string;
     baseline: number;
     width: number;
-    height: number; 
+    height: number;
+    decoration: TextDecoration;
 
     constructor(value:string, baseline:number, width:number, height:number) { 
         this.value = value;
         this.baseline = baseline;
         this.width = width;
         this.height = height;
+        this.decoration = {underline:false};
     }
 }
 
@@ -80,7 +93,7 @@ export class MultiTextBlock implements ITextBlock<SingleTextBlock[]> {
     }
 }
 
-export function mesureText(ctx:CanvasRenderingContext2D, value:string) : ITextBlock<string|SingleTextBlock[]> { 
+export function measureText(ctx:CanvasRenderingContext2D, value:string) : MultiTextBlock|SingleTextBlock { 
     if (value.includes("\n")) {
         var drawableRows = [];
         var width = 0;
@@ -135,6 +148,6 @@ export function strokeRectangle(
     w: number, h: number, 
     color: string|CanvasGradient|CanvasPattern) : void
 {
-    ctx.fillStyle = color;
+    ctx.strokeStyle = color;
     ctx.strokeRect(x, y, w, h);
 }
