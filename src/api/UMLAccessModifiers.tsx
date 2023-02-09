@@ -1,5 +1,6 @@
 import { Component, createSignal, JSX, onMount } from "solid-js";
 import { CheckBox } from "./CheckBox";
+import { SmallLabel } from "./Label";
 
 export enum AccessModifiers { 
     Public = '+',
@@ -28,7 +29,7 @@ export const UMLAccessModifiersContainer : Component<{
 
     return (
         <>
-        <label class="font-small text-xs text-gray-500">Access Modifiers</label>
+        <SmallLabel title="Access Modifiers"/>
         <div class="grid grid-cols-2 gap-x-3">
             <div class="flex flex-col">
                 <CheckBox 
