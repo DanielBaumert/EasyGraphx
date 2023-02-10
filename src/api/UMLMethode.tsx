@@ -1,4 +1,4 @@
-import { Component, createSignal, For, Show } from "solid-js";
+import { Component, createSignal, For, ParentComponent, Show } from "solid-js";
 import { JSX } from "solid-js/jsx-runtime";
 import { Button } from "./Button";
 import { CheckBox } from "./CheckBox";
@@ -6,74 +6,8 @@ import { Field } from "./Field";
 import { Label, SmallLabel } from "./Label";
 import { StringBuilder } from "./StringBuilder";
 import { AccessModifiers, IUMLAccessModifiers, UMLAccessModifiersContainer } from "./UMLAccessModifiers";
+import { UMLParameter } from "./UMLParameter";
 
-export interface IUMLParameter {
-    name?: string;
-    type?: string;
-    toString(): string;
-}
-
-export class UMLParameter {
-    name?: string;
-    type?: string;
-
-    toString(): string {
-        var sb = new StringBuilder();
-
-        if (this.name) {
-            sb.write(this.name);
-            if (this.type) {
-                sb.write(":").write(this.type);
-            }
-        } else if (this.type) {
-            sb.write(this.type);
-        }
-
-        return sb.toString();
-    }
-}
-
-
-const UMLParameterContainer: Component<{
-    index: number,
-    methodeIndex:number,
-    param: UMLParameter,
-    update: Function,
-    onPop: (methodeIndex:number, parameterIndex:number) => void,
-}> = (props) => {
-    const [isExpanded, setExpanded] = createSignal<boolean>();
-    return (
-        <div class="relative border rounded p-1 mb-1">
-            <div class={`absolute flex flex-row ${!isExpanded() ? "h-full items-center top-0" : "top-1"} right-1`}>
-                <div class="group" onClick={e => props.onPop(props.methodeIndex, props.index)}>
-                    <svg class="w-4 h-4 group-hover:stroke-red-500 group-hover:shadow"
-                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width={2} stroke="currentColor" >
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </div>
-                <div class={isExpanded() ? 'group rotate-180' : 'group'} onClick={e => setExpanded(!isExpanded())}>
-                    <svg class="w-4 h-4 group-hover:shadow"
-                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width={2} stroke="currentColor" >
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                    </svg>
-                </div>
-            </div>
-            <Show when={isExpanded()}>
-                <Field
-                    title="Name"
-                    initValue={props.param.name}
-                    onInputChange={e => { props.param.name = e.currentTarget.value; props.update() }} />
-                <Field
-                    title="Type"
-                    initValue={props.param.type}
-                    onInputChange={e => { props.param.type = e.currentTarget.value; props.update() }} />
-            </Show>
-            <Show when={!isExpanded()}>
-                <SmallLabel title={props.param.toString() === "" ? "Unnamed" : props.param.toString()} />
-            </Show>
-        </div>
-    );
-}
 
 export interface IUMLMethode extends IUMLAccessModifiers {
     isStatic?: boolean;
@@ -117,14 +51,13 @@ export class UMLMethode implements IUMLMethode {
 }
 
 
-export const UMLMethodeContainer: Component<{
+export const UMLMethodeContainer: ParentComponent<{
     index: number,
     methode: UMLMethode,
     onDrop: JSX.EventHandlerUnion<HTMLDivElement, DragEvent>,
     delete: Function,
     update: Function,
-    onPushParameter: (methodeIndex:number)=>void,
-    onPopParameter: (methodeIndex:number, parameterIndex:number)=>void
+    onPushParameter: Function
 }> = (props) => {
     const [isExpanded, setExpanded] = createSignal<boolean>();
 
@@ -154,16 +87,9 @@ export const UMLMethodeContainer: Component<{
                         initValue={props.methode.accessModifier}
                         onChange={(mod: AccessModifiers) => { props.methode.accessModifier = mod; props.update(); }} />
                     <SmallLabel title="Parameters" />
-                    <Button title='Add parameter' onclick={() => props.onPushParameter(props.index)} />
+                    <Button title='Add parameter' onclick={() => props.onPushParameter()} />
                     <div class="flex flex-col p-1 rounded border border-sky-400">
-                        <For each={props.methode.parameters}>
-                            {(param, i) => <UMLParameterContainer
-                                index={i()}
-                                methodeIndex={props.index}
-                                param={param}
-                                onPop={props.onPopParameter}
-                                update={props.update} />}
-                        </For>
+                        {props.children}
                     </div>
                     <Field title="Return type"
                         initValue={props.methode.returnType}

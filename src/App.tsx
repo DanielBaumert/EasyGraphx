@@ -1,4 +1,4 @@
-import { Component, createSignal, For, onMount, Show} from 'solid-js';
+import { Component, createSignal, For, onMount, Show } from 'solid-js';
 import { createStore } from "solid-js/store";
 import { Button } from './api/Button';
 import { CheckBox } from './api/CheckBox';
@@ -8,7 +8,8 @@ import { Field } from './api/Field';
 import { Label } from './api/Label';
 import { UMLAttribute, UMLAttributeContainer } from './api/UMLAttribute';
 import { UMLClass } from './api/UMLClass';
-import { UMLMethode, UMLMethodeContainer, UMLParameter } from './api/UMLMethode';
+import { UMLMethode, UMLMethodeContainer} from './api/UMLMethode';
+import { UMLParameter, UMLParameterContainer } from './api/UMLParameter';
 
 const [store, setStore] = createStore<
   {
@@ -39,8 +40,8 @@ const [store, setStore] = createStore<
 var changingsObserved: boolean = true;
 
 const App: Component = () => {
-  const [currentClass, setCurrentClass] = createSignal<UMLClass>(undefined, { equals: false });
   const [isContextMenuOpen, setContextMenuOpen] = createSignal<boolean>(false);
+  const [currentClass, setCurrentClass] = createSignal<UMLClass>(undefined, { equals: false });
   const [locationContextMenu, setLocationContextMenu] = createSignal<Point>(undefined);
 
   let frameNumber: number;
@@ -197,22 +198,19 @@ const App: Component = () => {
    * End - Methode management
    */
 
-  function pushParameter(methodeIndex:number) {
-    console.log("before:", currentClass().methodes[methodeIndex]);
-    currentClass().methodes[methodeIndex].parameters.push(new UMLParameter());
-    console.log("after:", currentClass().methodes[methodeIndex]);
+  function pushParameter(methodeIndex: number) {
+    currentClass().methodes[methodeIndex].parameters.push(new UMLParameter())
     setCurrentClass(currentClass());
-    console.log("end:", currentClass().methodes[methodeIndex]);
     updateView();
   }
 
-  function popParameter(methIndex: number, parameterIndex:number) {
+  function popParameter(methIndex: number, parameterIndex: number) {
     currentClass().methodes[methIndex].parameters.splice(parameterIndex, 1);
     setCurrentClass(currentClass());
     updateView();
   }
 
-  function dropParameter(methIndex: number, parameterIndex:number,  e: DragEvent) {
+  function dropParameter(methIndex: number, parameterIndex: number, e: DragEvent) {
     const src = Number.parseInt(e.dataTransfer.getData("number"));
     currentClass().methodes[methIndex].parameters.splice(
       parameterIndex,
@@ -316,9 +314,9 @@ const App: Component = () => {
     updateView()
   }
 
-  function onContextMenuRemoveClass() { 
+  function onContextMenuRemoveClass() {
     setStore(
-      "classes", 
+      "classes",
       store.classes.filter(x => x.uuid !== currentClass().uuid));
     updateView();
   }
@@ -394,12 +392,12 @@ const App: Component = () => {
           meth.accessModifier = methElement["accessModifier"] ?? undefined;
           meth.parameters = [];
 
-          for(var paramElement of methElement['parameters'] ?? []){ 
-              const param = new UMLParameter();
-              param.name = paramElement["name"] ?? undefined;
-              param.type = paramElement["type"] ?? undefined;
+          for (var paramElement of methElement['parameters'] ?? []) {
+            const param = new UMLParameter();
+            param.name = paramElement["name"] ?? undefined;
+            param.type = paramElement["type"] ?? undefined;
 
-              meth.parameters.push(param);
+            meth.parameters.push(param);
           }
 
           cls.methodes.push(meth);
@@ -467,11 +465,11 @@ const App: Component = () => {
               <div class="overflow-y-auto h-full">
                 <For each={currentClass().attributes}>
                   {(attr, i) => <UMLAttributeContainer
-                      index={i()}
-                      attr={attr}
-                      onDrop={e => dropAttribute(i(), e)}
-                      update={updateView}
-                      delete={() => popAttribute(i())} />}
+                    index={i()}
+                    attr={attr}
+                    onDrop={e => dropAttribute(i(), e)}
+                    update={updateView}
+                    delete={() => popAttribute(i())} />}
                 </For>
               </div>
             </div>
@@ -482,17 +480,25 @@ const App: Component = () => {
               <Button title='Add methode' onclick={pushMethode} />
               <div class="overflow-y-auto h-full">
                 <For each={currentClass().methodes}>
-                  {(meth, i) => {
-                    console.log("update");
-
-                   return (<UMLMethodeContainer
-                      index={i()}
-                      methode={meth}
-                      onDrop={e => dropMethode(i(), e)}
+                  {(methode, iMethode) => {
+                    return (<UMLMethodeContainer
+                      index={iMethode()}
+                      methode={methode}
+                      onDrop={e => dropMethode(iMethode(), e)}
                       update={updateView}
-                      delete={() => popMethode(i())}
-                      onPushParameter={pushParameter}
-                      onPopParameter={popParameter}/>)}}
+                      delete={() => popMethode(iMethode())}
+                      onPushParameter={() => pushParameter(iMethode())}>
+
+                      <For each={currentClass().methodes[iMethode()].parameters}>
+                        {(param, iParam) => <UMLParameterContainer
+                          param={param}
+                          popParameter={() => popParameter(iMethode(), iParam())}
+                          update={updateView} 
+                          />}
+                      </For>
+
+                    </UMLMethodeContainer>)
+                  }}
                 </For>
               </div>
             </div>
