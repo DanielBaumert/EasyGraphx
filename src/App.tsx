@@ -1,4 +1,4 @@
-import { Component, createSignal, For, onMount, Show } from 'solid-js';
+import { Component, createSignal, For, Match, onMount, Show, Switch } from 'solid-js';
 import { createStore } from "solid-js/store";
 import { Button } from './api/Button';
 import { CheckBox } from './api/CheckBox';
@@ -8,7 +8,7 @@ import { Field } from './api/Field';
 import { Label } from './api/Label';
 import { UMLAttribute, UMLAttributeContainer } from './api/UMLAttribute';
 import { UMLClass } from './api/UMLClass';
-import { UMLMethode, UMLMethodeContainer} from './api/UMLMethode';
+import { UMLMethode, UMLMethodeContainer } from './api/UMLMethode';
 import { UMLParameter, UMLParameterContainer } from './api/UMLParameter';
 
 const [store, setStore] = createStore<
@@ -42,6 +42,7 @@ var changingsObserved: boolean = true;
 const App: Component = () => {
   const [isContextMenuOpen, setContextMenuOpen] = createSignal<boolean>(false);
   const [currentClass, setCurrentClass] = createSignal<UMLClass>(undefined, { equals: false });
+  const [contentIndex, setContextIndex] = createSignal<number>(0);
   const [locationContextMenu, setLocationContextMenu] = createSignal<Point>(undefined);
 
   let frameNumber: number;
@@ -457,50 +458,74 @@ const App: Component = () => {
                 onInputChange={e => { currentClass().name = e.currentTarget.value; updateView() }} />
               <CheckBox id="static" title="Abstract" value={currentClass().isAbstract} onChanges={updateIsStatic} />
             </div>
-            <div id="attr-container" class="
-              flex flex-col h-full
-              overflow-hidden max-h-max bg-white rounded border border-sky-400 px-2 py-2 shadow">
-              <Label title="Attributes" />
-              <Button title='Add attribute' onclick={pushAttribute} />
-              <div class="overflow-y-auto h-full">
-                <For each={currentClass().attributes}>
-                  {(attr, i) => <UMLAttributeContainer
-                    index={i()}
-                    attr={attr}
-                    onDrop={e => dropAttribute(i(), e)}
-                    update={updateView}
-                    delete={() => popAttribute(i())} />}
-                </For>
+            <div>
+              <div class={`
+                relative z-10 after:p-b-[1px] after:border-b after:-translate-y-[1px] after:block after:border-sky-400 after:relative after:w-1/2
+                ${contentIndex() == 0 
+                  ? "after:left-1/2"
+                  : "after:left-0" }`}>
+                <div class='flex flex-row justify-between'>
+                  <button class={`py-1 w-full text-sm font-medium text-gray-700 rounded-t
+                  ${contentIndex() == 0 
+                    ? "bg-white border-sky-400 border-x border-t" 
+                    : "border-gray-400 border-x border-t bg-white hover:border-sky-400 text-gray-400 hover:text-gray-700"}`}
+                    onclick={() => setContextIndex(0)}
+                    >Attributes</button>
+                  <button class={`tpy-1 w-full text-sm font-medium text-gray-700 rounded-t
+                  ${contentIndex() == 1 
+                    ? "bg-white border-sky-400 border-x border-t" 
+                    : "border-gray-400 border-t border-r bg-white hover:border-sky-400 text-gray-400 hover:text-gray-700"}`}
+                    onclick={() => setContextIndex(1)}
+                    >Methodes</button>
+                  {/* <Button title="" onclick={() => setContextIndex(1)} /> */}
+                </div>
               </div>
-            </div>
-            <div id="meth-container" class="
-              flex flex-col h-full
-              overflow-hidden max-h-max bg-white rounded border border-sky-400 px-2 py-2 shadow">
-              <Label title="Methodes" />
-              <Button title='Add methode' onclick={pushMethode} />
-              <div class="overflow-y-auto h-full">
-                <For each={currentClass().methodes}>
-                  {(methode, iMethode) => {
-                    return (<UMLMethodeContainer
-                      index={iMethode()}
-                      methode={methode}
-                      onDrop={e => dropMethode(iMethode(), e)}
-                      update={updateView}
-                      delete={() => popMethode(iMethode())}
-                      onPushParameter={() => pushParameter(iMethode())}>
 
-                      <For each={currentClass().methodes[iMethode()].parameters}>
-                        {(param, iParam) => <UMLParameterContainer
-                          param={param}
-                          popParameter={() => popParameter(iMethode(), iParam())}
-                          update={updateView} 
-                          />}
+              <Switch>
+                <Match when={contentIndex() == 0}>
+                  <div id="attr-container" class="-translate-y-[1px] flex flex-col h-full overflow-hidden bg-white max-h-max rounded-b border-x border-b border-sky-400 px-2 py-2 shadow">
+                    <Button title='Add attribute' onclick={pushAttribute} />
+                    <div class="overflow-y-auto h-full">
+                      <For each={currentClass().attributes}>
+                        {(attr, i) => <UMLAttributeContainer
+                          index={i()}
+                          attr={attr}
+                          onDrop={e => dropAttribute(i(), e)}
+                          update={updateView}
+                          delete={() => popAttribute(i())} />}
                       </For>
+                    </div>
+                  </div>
+                </Match>
+                <Match when={contentIndex() == 1}>
+                  <div id="meth-container" class="-translate-y-[1px] flex flex-col h-full overflow-hidden max-h-max bg-white rounded-b border-x border-b border-sky-400 px-2 py-2 shadow">
+                    <Button title='Add methode' onclick={pushMethode} />
+                    <div class="overflow-y-auto h-full">
+                      <For each={currentClass().methodes}>
+                        {(methode, iMethode) => {
+                          return (<UMLMethodeContainer
+                            index={iMethode()}
+                            methode={methode}
+                            onDrop={e => dropMethode(iMethode(), e)}
+                            update={updateView}
+                            delete={() => popMethode(iMethode())}
+                            onPushParameter={() => pushParameter(iMethode())}>
 
-                    </UMLMethodeContainer>)
-                  }}
-                </For>
-              </div>
+                            <For each={currentClass().methodes[iMethode()].parameters}>
+                              {(param, iParam) => <UMLParameterContainer
+                                param={param}
+                                popParameter={() => popParameter(iMethode(), iParam())}
+                                update={updateView}
+                              />}
+                            </For>
+
+                          </UMLMethodeContainer>)
+                        }}
+                      </For>
+                    </div>
+                  </div>
+                </Match>
+              </Switch>
             </div>
           </div>
         </div>

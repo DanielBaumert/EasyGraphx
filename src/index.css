@@ -3,6 +3,10 @@
 @tailwind utilities;
 
 
+*{
+    font-size: large;
+}
+
 /* width */
 ::-webkit-scrollbar {
     width: .75rem;
