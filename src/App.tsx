@@ -3,7 +3,7 @@ import { createStore } from "solid-js/store";
 import { Button } from './api/Button';
 import { CheckBox } from './api/CheckBox';
 import { ContextMenu, NavItem } from './api/ContextMenu';
-import { drawTextHCenter, measureText, drawRectangle, drawTextHLeft, Point, SingleTextBlock, drawLine } from './api/DrawUtils';
+import { drawTextHCenter, measureText, drawRectangle, drawTextHLeft, Point, SingleTextBlock, drawLine, drawCircel, drawCircels, strokeRectangle, Math2 } from './api/DrawUtils';
 import { Field } from './api/Field';
 import { Label } from './api/Label';
 import { UMLAttribute, UMLAttributeContainer } from './api/UMLAttribute';
@@ -19,16 +19,36 @@ type Connector = {
 const [store, setStore] = createStore<
   {
     classes: UMLClass[],
-    connections: Connector[]
+    grid:{ 
+      gridSpace: number,
+      gridColor: string|CanvasGradient|CanvasPattern,
+      subGridVisuale: boolean,
+      subGridColor: string|CanvasGradient|CanvasPattern,
+      subGridCount: number,
+    },
+    hoverClass?: UMLClass,
+    hoverBorder: boolean,
+    connections: Connector[],
     mouse: Point,
     readyToMove: boolean,
-    viewOffset: Point
+    viewOffset: Point,
+    zoom:number,
   }>({
     classes: [],
+    grid:{
+      gridColor: "#00505033",
+      gridSpace: 24,
+      subGridVisuale: true,
+      subGridColor: "#00505011",
+      subGridCount: 3
+    },
+    hoverClass: undefined,
+    hoverBorder: false,
     connections: [],
     mouse: { x: 0, y: 0 },
     readyToMove: false,
-    viewOffset: { x: 0, y: 0 }
+    viewOffset: { x: 0, y: 0 },
+    zoom: 1.0
   });
 
 // var exampleClass = new UMLClass();
@@ -79,28 +99,52 @@ const App: Component = () => {
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
       // Draw background
       {
-        const clusterSize = 24;
-        const clusterColor = "#00505033";
-        const xClusterShift = (store.viewOffset.x % clusterSize);
-        const yClusterShift = (store.viewOffset.y % clusterSize);
+        const gridSize = store.grid.gridSpace * store.zoom;
+        const xClusterShift = (store.viewOffset.x % gridSize);
+        const yClusterShift = (store.viewOffset.y % gridSize);
 
-        for (var x = 0 + xClusterShift; x < canvas.width; x += clusterSize) {
-          drawLine(ctx, x, 0, x, canvas.height, clusterColor);
-        }
-        for (var y = 0 + yClusterShift; y < canvas.height; y += clusterSize) {
-          drawLine(ctx, 0, y, canvas.width, y, clusterColor);
+        if(store.grid.subGridVisuale) { 
+          const subGridSize = gridSize / (1 +store.grid.subGridCount);
+          console.log(subGridSize);
+          for (var x = -gridSize + xClusterShift; x < canvas.width + gridSize;) {
+            drawLine(ctx, x, 0, x, canvas.height, store.grid.gridColor);
+
+            for(var sx = 0; sx < store.grid.subGridCount; sx++){ 
+              x += subGridSize;
+              drawLine(ctx, x, 0, x, canvas.height, store.grid.subGridColor);
+            }
+
+            x += subGridSize;
+          }
+
+          for (var y = -gridSize + yClusterShift; y < canvas.height + gridSize;) {
+            drawLine(ctx, 0, y, canvas.width, y, store.grid.gridColor);
+
+            for(var sy = 0; sy < store.grid.subGridCount; sy++){ 
+              y += subGridSize;
+              drawLine(ctx, 0, y, canvas.width, y, store.grid.subGridColor);
+            }
+            
+            y += subGridSize;
+          }
+        } else{ 
+          for (var x = 0 + xClusterShift; x < canvas.width; x += gridSize) {
+            drawLine(ctx, x, 0, x, canvas.height, store.grid.gridColor);
+          }
+          for (var y = 0 + yClusterShift; y < canvas.height; y += gridSize) {
+            drawLine(ctx, 0, y, canvas.width, y, store.grid.gridColor);
+          }
         }
       }
       // Draw connections
       {
         for(var connection of store.connections){
-          
-          
+
           drawLine(ctx, 
-            store.viewOffset.x + connection.src.x + (connection.src.width / 2),
-            store.viewOffset.y + connection.src.y + (connection.src.height / 2),
-            store.viewOffset.x + connection.dst.x + (connection.dst.width / 2),
-            store.viewOffset.y + connection.dst.y + (connection.dst.height / 2),
+            store.viewOffset.x + (connection.src.x * store.zoom) + (connection.src.width / 2),
+            store.viewOffset.y + (connection.src.y * store.zoom) + (connection.src.height / 2),
+            store.viewOffset.x + (connection.dst.x * store.zoom) + (connection.dst.width / 2),
+            store.viewOffset.y + (connection.dst.y * store.zoom) + (connection.dst.height / 2),
             "black");
         }
       }
@@ -108,10 +152,10 @@ const App: Component = () => {
       {
         ctx.strokeStyle = "black";
         ctx.fillStyle = "white";
-        ctx.font = "16px Arial";
-        for (var umlClass of store.classes) {
-          var xPadding = 16;
+        ctx.font =  `${16 * store.zoom}px Arial`;
+        const xPadding = 16 * store.zoom;
 
+        for (var umlClass of store.classes) {
           var titleSize = measureText(ctx, umlClass.toString());
           var attrSizes = umlClass.attributes?.map(x => {
             var measuredText = measureText(ctx, x.toString());
@@ -128,19 +172,19 @@ const App: Component = () => {
             return measuredText;
           }) ?? [];
 
-          var maxHeaderBoxSize = titleSize.height + 8;
+          var maxHeaderBoxSize = titleSize.height + (xPadding / 2);
           var maxBoxWidth = Math.max(
             titleSize.width + xPadding,
             ...methSizes?.map(x => x.width + xPadding),
             ...attrSizes?.map(x => x.width + xPadding));
-          var maxAttrBoxHeight = Math.max(attrSizes?.reduce((p, c) => p + c.height, 0), 10);
-          var maxMethBoxHeight = Math.max(methSizes?.reduce((p, c) => p + c.height, 0), 10);
+          var maxAttrBoxHeight = Math.max(attrSizes?.reduce((p, c) => p + c.height, 0), 10 * store.zoom);
+          var maxMethBoxHeight = Math.max(methSizes?.reduce((p, c) => p + c.height, 0), 10 * store.zoom);
 
-          const xClassOffset = store.viewOffset.x + umlClass.x;
-          const yClassOffset = store.viewOffset.y + umlClass.y;
+          const xClassOffset = store.viewOffset.x + (umlClass.x * store.zoom);
+          const yClassOffset = store.viewOffset.y + (umlClass.y * store.zoom);
 
           drawRectangle(ctx, xClassOffset, yClassOffset, maxBoxWidth, maxHeaderBoxSize, "black", "white");
-          drawTextHCenter(ctx, xClassOffset, yClassOffset + 4, maxBoxWidth, xPadding, titleSize, "black");
+          drawTextHCenter(ctx, xClassOffset, yClassOffset + (xPadding / 4), maxBoxWidth, xPadding, titleSize, "black");
 
           var yOffset = yClassOffset + maxHeaderBoxSize;
           drawRectangle(ctx, xClassOffset, yOffset, maxBoxWidth, maxAttrBoxHeight, "black", "white");
@@ -161,7 +205,18 @@ const App: Component = () => {
           umlClass.height = maxHeaderBoxSize + maxAttrBoxHeight + maxMethBoxHeight;
         }
       }
-      
+      // Draw hover class effect
+      {
+        // if(store.hoverClass !== undefined && store.hoverBorder){ 
+        //   strokeRectangle(ctx, 
+        //     store.viewOffset.x + (store.hoverClass.x * store.zoom), 
+        //     store.viewOffset.y + (store.hoverClass.y * store.zoom), 
+        //     store.hoverClass.width, store.hoverClass.height, 
+        //     "green");
+        // }
+      }
+
+
       changingsObserved = false;
     }
 
@@ -176,13 +231,11 @@ const App: Component = () => {
     setCurrentClass(currentClass());
     updateView();
   }
-
   function popAttribute(attrIndex: number) {
     currentClass().attributes.splice(attrIndex, 1);
     setCurrentClass(currentClass());
     updateView();
   }
-
   function dropAttribute(i: number, e: DragEvent) {
     const src = Number.parseInt(e.dataTransfer.getData("number"));
     currentClass().attributes.splice(
@@ -201,13 +254,11 @@ const App: Component = () => {
     setCurrentClass(currentClass());
     updateView();
   }
-
   function popMethode(methIndex: number) {
     currentClass().methodes.splice(methIndex, 1);
     setCurrentClass(currentClass());
     updateView();
   }
-
   function dropMethode(i: number, e: DragEvent) {
     const src = Number.parseInt(e.dataTransfer.getData("number"));
     currentClass().methodes.splice(
@@ -221,19 +272,16 @@ const App: Component = () => {
   /*
    * End - Methode management
    */
-
   function pushParameter(methodeIndex: number) {
     currentClass().methodes[methodeIndex].parameters.push(new UMLParameter())
     setCurrentClass(currentClass());
     updateView();
   }
-
   function popParameter(methIndex: number, parameterIndex: number) {
     currentClass().methodes[methIndex].parameters.splice(parameterIndex, 1);
     setCurrentClass(currentClass());
     updateView();
   }
-
   function dropParameter(methIndex: number, parameterIndex: number, e: DragEvent) {
     const src = Number.parseInt(e.dataTransfer.getData("number"));
     currentClass().methodes[methIndex].parameters.splice(
@@ -250,36 +298,41 @@ const App: Component = () => {
       return readyToMove;
     });
   }
-
   function updateIsStatic(e: Event) {
     if (e.currentTarget instanceof HTMLInputElement) {
       currentClass().isAbstract = e.currentTarget.checked;
       updateView();
     }
   }
-
   function updateMousePos(mouseEvent: MouseEvent) {
     setStore("mouse", mouseEvent);
   }
-
-  function findClassAt(position: { x: number, y: number }): UMLClass {
+  function findClassAt(position: Point): UMLClass {
     for (var i = store.classes.length - 1; i >= 0; i--) {
       const umlClass = store.classes[i];
       const mouseViewX = position.x - store.viewOffset.x;
       const mouseViewY = position.y - store.viewOffset.y;
 
-      if (umlClass.x <= mouseViewX && mouseViewX <= umlClass.x + umlClass.width
-        && umlClass.y <= mouseViewY && mouseViewY <= umlClass.y + umlClass.height) {
+      if  ((umlClass.x * store.zoom) <= mouseViewX && mouseViewX <= (umlClass.x * store.zoom) + umlClass.width
+        && (umlClass.y * store.zoom) <= mouseViewY && mouseViewY <= (umlClass.y * store.zoom) + umlClass.height) {
         return umlClass;
       }
     }
 
     return undefined;
   }
-
   /*
    * Canvas
    */
+  function onCanvasScroll(e: WheelEvent){ 
+    if(e.deltaY > 0) { 
+      setStore("zoom", store.zoom * 0.9);
+      updateView();
+    } else { 
+      setStore("zoom", store.zoom * 1.1);
+      updateView();
+    }
+  }
   function onCanvasMouseDown(e: MouseEvent) {
     setCurrentClass();
     if (e.buttons === 1) {
@@ -291,14 +344,47 @@ const App: Component = () => {
       }
     }
   }
-
   function onCanvasMouseMove(e: MouseEvent) {
+    var newHoverClass = findClassAt(e);
+    if(newHoverClass === undefined && store.hoverClass !== undefined){ 
+      setStore("hoverClass", newHoverClass);
+      canvas.style["cursor"] = "default" 
+      updateView();
+    } else if(newHoverClass !== undefined) {
+      // a class below the mouse is found
+      if(store.hoverClass?.uuid !== newHoverClass.uuid) { 
+        // is the curret newHoverClass not the same below the mouse
+        setStore("hoverClass", newHoverClass);
+        //canvas.style["cursor"] = "move";
+        updateView();
+      } else { 
+        const mouseViewX = e.x - store.viewOffset.x;
+        const mouseViewY = e.y - store.viewOffset.y;
+        const rightBorder = store.hoverClass.x + store.hoverClass.width;
+        const bottomBorder = store.hoverClass.y + store.hoverClass.height;
+        if(
+          !store.hoverBorder &&
+          (store.hoverClass.x - 5 <= mouseViewX && mouseViewX <= store.hoverClass.x + 5 // left side hover
+          || store.hoverClass.y - 5 <= mouseViewY && mouseViewY + store.viewOffset.y <= store.hoverClass.y + 5 // top side hover
+          || rightBorder - 5 <= mouseViewX && mouseViewX <= rightBorder + 5 //
+          || bottomBorder - 5 <= mouseViewY && mouseViewY <= bottomBorder + 5))
+        {
+          // if the mouse near the border and the hoverBorder is not set => set border hover
+          setStore("hoverBorder", true);
+          updateView();
+        } else if(store.hoverBorder) { 
+          // if hoverBorder set but the mouse not close to the border => deselect border hover
+          setStore("hoverBorder", false);
+          updateView();
+        }
+      }
+    }
     if (e.buttons === 1) {
       var deltaX = e.x - store.mouse.x;
       var deltaY = e.y - store.mouse.y;
       if (currentClass() && store.readyToMove) {
-        currentClass().x += deltaX;
-        currentClass().y += deltaY;
+        currentClass().x += deltaX * (1 / store.zoom);
+        currentClass().y += deltaY * (1 / store.zoom);
 
         setCurrentClass(currentClass());
         updateView();
@@ -315,13 +401,11 @@ const App: Component = () => {
 
     updateMousePos(e);
   }
-
   function onCanvasMouseUp(e: MouseEvent) {
     if (currentClass() && e.buttons === 0 && store.readyToMove) {
       updateReadyToMove(false);
     }
   }
-
   function onCanvasContextMenu(e: MouseEvent) {
     e.preventDefault();
     var umlClass = findClassAt(e);
@@ -329,7 +413,6 @@ const App: Component = () => {
     setLocationContextMenu(e);
     setContextMenuOpen(true);
   }
-
   /*
    * Context Menu
    */
@@ -338,14 +421,12 @@ const App: Component = () => {
     setStore("classes", store.classes.length, newClass);
     updateView()
   }
-
   function onContextMenuRemoveClass() {
     setStore(
       "classes",
       store.classes.filter(x => x.uuid !== currentClass().uuid));
     updateView();
   }
-
   function onContextMenuSaveImage() {
     const link = document.createElement("a");
     link.download = 'download.png';
@@ -353,7 +434,6 @@ const App: Component = () => {
     link.click();
     link.remove();
   }
-
   function onContextMenuSaveState() {
     const link = document.createElement("a");
     var file = new Blob(
@@ -364,7 +444,6 @@ const App: Component = () => {
     link.click();
     link.remove();
   }
-
   function onContextMenuLoadState() {
     const fileLoader = document.createElement("input");
     fileLoader["type"] = "file";
@@ -391,7 +470,7 @@ const App: Component = () => {
           y: element["y"] ?? 0
         });
         cls.name = element["name"],
-          cls.width = element["width"];
+        cls.width = element["width"];
         cls.height = element["height"];
         cls.isAbstract = element["isAbstract"] ?? false;
         cls.attributes = [];
@@ -441,19 +520,18 @@ const App: Component = () => {
     fileLoader.remove();
   }
 
-  setLocationContextMenu({x: 100, y:100});
+  setLocationContextMenu({ x: 100, y: 100 });
   onContextMenuAddClass();
-  setLocationContextMenu({x: 500, y:500});
+  setLocationContextMenu({ x: 500, y: 500 });
   onContextMenuAddClass();
 
   setStore(
     "connections",
-     store.connections.length,
-     {
+    store.connections.length,
+    {
       src: store.classes[0],
       dst: store.classes[1]
     });
-  
 
   return (
     <div
@@ -486,6 +564,7 @@ const App: Component = () => {
       <canvas
         ref={canvas} id="canny"
         class='absolute bg-transparent'
+        onWheel={onCanvasScroll}
         onmousedown={onCanvasMouseDown}
         onmousemove={onCanvasMouseMove}
         onmouseup={onCanvasMouseUp}
@@ -527,7 +606,7 @@ const App: Component = () => {
                 <div id="attr-container" class="flex flex-col overflow-hidden max-h-max bg-white rounded-b border-x border-b border-sky-400 p-2 shadow">
                   <Button title='Add attribute' onclick={pushAttribute} />
                   <div class="overflow-y-auto h-full">
-                  <For each={currentClass().attributes}>
+                    <For each={currentClass().attributes}>
                       {(attr, i) => <UMLAttributeContainer
                         index={i()}
                         attr={attr}
@@ -542,7 +621,7 @@ const App: Component = () => {
                 <div id="meth-container" class="flex flex-col overflow-hidden max-h-max bg-white rounded-b border-x border-b border-sky-400 p-2 shadow">
                   <Button title='Add methode' onclick={pushMethode} />
                   <div class="overflow-y-auto h-full">
-                  <For each={currentClass().methodes}>
+                    <For each={currentClass().methodes}>
                       {(methode, iMethode) => {
                         return (<UMLMethodeContainer
                           index={iMethode()}

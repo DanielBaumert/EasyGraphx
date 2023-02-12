@@ -1,3 +1,6 @@
+export const HALF_CIRCLE = Math.PI
+export const FULL_CIRCLE = 2 * Math.PI
+
 export type Point = { 
     x:number;
     y:number;
