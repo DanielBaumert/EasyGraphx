@@ -491,35 +491,37 @@ const App: Component = () => {
         onmouseup={onCanvasMouseUp}
         onContextMenu={onCanvasContextMenu} />
       <Show when={currentClass()}>
-        <div id="side-nav" class="fixed flex min-h-screen max-h-screen top-0 right-0 p-4 min-w-[269px]">
+        <div id="side-nav" class="fixed flex max-h-screen top-0 right-0 p-4 min-w-[351px]">
           <div class="flex grow flex-col">
-            <div class="bg-white rounded border border-sky-400 px-4 py-2 shadow">
-            <Label title="Class" />
-            <Field title='Property'
-              initValue={currentClass().property}
-              onInputChange={e => { currentClass().property = e.currentTarget.value; updateView() }} />
-            <Field title='Name'
-              initValue={currentClass().name}
-              onInputChange={e => { currentClass().name = e.currentTarget.value; updateView() }} />
-            <CheckBox id="static" title="Abstract" value={currentClass().isAbstract} onChanges={updateIsStatic} />
+            <div class="bg-white rounded border border-sky-400 px-4 py-2 mb-4 shadow">
+              <Label title="Class" />
+              <Field title='Property'
+                initValue={currentClass().property}
+                onInputChange={e => { currentClass().property = e.currentTarget.value; updateView() }} />
+              <Field title='Name'
+                initValue={currentClass().name}
+                onInputChange={e => { currentClass().name = e.currentTarget.value; updateView() }} />
+              <CheckBox id="static" title="Abstract" value={currentClass().isAbstract} onChanges={updateIsStatic} />
             </div>
+            {/* Tabs */}
             <div>
               <div class='flex flex-row justify-between'>
                 <button class={`py-1 w-full text-sm font-medium text-gray-700 rounded-t
                   ${contentIndex() == 0
                     ? "bg-white border-sky-400 border-x border-t"
-                    : "border-gray-400 border-x border-t bg-white hover:border-sky-400 text-gray-400 hover:text-gray-700"}`}
+                    : "border border-gray-400 bg-white border-b-sky-400 hover:border-sky-400 text-gray-400 hover:text-gray-700"}`}
                   onclick={() => setContextIndex(0)}
                 >Attributes</button>
-                <button class={`tpy-1 w-full text-sm font-medium text-gray-700 rounded-t
+                <button class={`py-1 w-full text-sm font-medium text-gray-700 rounded-t
                   ${contentIndex() == 1
                     ? "bg-white border-sky-400 border-x border-t"
-                    : "border border-gray-400 bg-white border-b-sky-400  hover:border-sky-400 text-gray-400 hover:text-gray-700"}`}
+                    : "border border-gray-400 bg-white border-b-sky-400 hover:border-sky-400 text-gray-400 hover:text-gray-700"}`}
                   onclick={() => setContextIndex(1)}
                 >Methodes</button>
                 {/* <Button title="" onclick={() => setContextIndex(1)} /> */}
               </div>
             </div>
+            {/* Tabs content */}
             <Switch>
               <Match when={contentIndex() === 0} >
                 <div id="attr-container" class="flex flex-col overflow-hidden max-h-max bg-white rounded-b border-x border-b border-sky-400 p-2 shadow">
