@@ -4,18 +4,18 @@ import { Point } from "./DrawUtils";
 export type ItemInfo = { 
     title: string,
     hidden?: boolean,
-    onclick: JSX.EventHandlerUnion<HTMLButtonElement, MouseEvent> 
+    onclick: JSX.EventHandlerUnion<HTMLButtonElement, MouseEvent>, 
+    classExt?: string
 }
 
 export const NavItem : Component<ItemInfo> = (props) => (
-    <button class="
+    <button class={`
         bg-white
         px-8 py-2 w-full
         text-left
         border border-gray-200 
-        text-sm font-medium text-gray-700 
-        hover:bg-gradient-to-r hover:from-cyan-500 hover:to-blue-500 
-        hover:text-white"
+        text-sm font-medium text-gray-700  
+        hover:text-white ${props.classExt ? props.classExt : ""}`}
         hidden={props.hidden ?? false}
         onclick={props.onclick}>
         {props.title}

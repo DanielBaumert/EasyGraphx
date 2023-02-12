@@ -11,14 +11,21 @@ import { UMLClass } from './api/UMLClass';
 import { UMLMethode, UMLMethodeContainer } from './api/UMLMethode';
 import { UMLParameter, UMLParameterContainer } from './api/UMLParameter';
 
+type Connector = {
+  src: UMLClass,
+  dst: UMLClass
+};
+
 const [store, setStore] = createStore<
   {
     classes: UMLClass[],
+    connections: Connector[]
     mouse: Point,
     readyToMove: boolean,
     viewOffset: Point
   }>({
     classes: [],
+    connections: [],
     mouse: { x: 0, y: 0 },
     readyToMove: false,
     viewOffset: { x: 0, y: 0 }
@@ -48,7 +55,6 @@ const App: Component = () => {
   let frameNumber: number;
   let canvas: HTMLCanvasElement;
 
-
   onMount(() => {
     window.addEventListener("resize", e => {
       canvas.width = window.innerWidth;
@@ -71,74 +77,91 @@ const App: Component = () => {
       ctx.imageSmoothingQuality = 'high';
       ctx.imageSmoothingEnabled = true;
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      // Draw background
+      {
+        const clusterSize = 24;
+        const clusterColor = "#00505033";
+        const xClusterShift = (store.viewOffset.x % clusterSize);
+        const yClusterShift = (store.viewOffset.y % clusterSize);
 
-      const clusterSize = 24;
-      const clusterColor = "#00505033";
-      const xClusterShift = (store.viewOffset.x % clusterSize);
-      const yClusterShift = (store.viewOffset.y % clusterSize);
-
-      for (var x = 0 + xClusterShift; x < canvas.width; x += clusterSize) {
-        drawLine(ctx, x, 0, x, canvas.height, clusterColor);
-      }
-      for (var y = 0 + yClusterShift; y < canvas.height; y += clusterSize) {
-        drawLine(ctx, 0, y, canvas.width, y, clusterColor);
-      }
-
-      ctx.strokeStyle = "black";
-      ctx.fillStyle = "white";
-      ctx.font = "16px Arial";
-      for (var umlClass of store.classes) {
-        var xPadding = 16;
-
-        var titleSize = measureText(ctx, umlClass.toString());
-        var attrSizes = umlClass.attributes?.map(x => {
-          var measuredText = measureText(ctx, x.toString());
-          if (measuredText instanceof SingleTextBlock) {
-            measuredText.decoration.underline = x.isStatic ?? false;
-          }
-          return measuredText;
-        }) ?? [];
-        var methSizes = umlClass.methodes?.map(x => {
-          var measuredText = measureText(ctx, x.toString());
-          if (measuredText instanceof SingleTextBlock) {
-            measuredText.decoration.underline = x.isStatic ?? false;
-          }
-          return measuredText;
-        }) ?? [];
-
-        var maxHeaderBoxSize = titleSize.height + 8;
-        var maxBoxWidth = Math.max(
-          titleSize.width + xPadding,
-          ...methSizes?.map(x => x.width + xPadding),
-          ...attrSizes?.map(x => x.width + xPadding));
-        var maxAttrBoxHeight = Math.max(attrSizes?.reduce((p, c) => p + c.height, 0), 10);
-        var maxMethBoxHeight = Math.max(methSizes?.reduce((p, c) => p + c.height, 0), 10);
-
-        const xClassOffset = store.viewOffset.x + umlClass.x;
-        const yClassOffset = store.viewOffset.y + umlClass.y;
-
-        drawRectangle(ctx, xClassOffset, yClassOffset, maxBoxWidth, maxHeaderBoxSize, "black", "white");
-        drawTextHCenter(ctx, xClassOffset, yClassOffset + 4, maxBoxWidth, xPadding, titleSize, "black");
-
-        var yOffset = yClassOffset + maxHeaderBoxSize;
-        drawRectangle(ctx, xClassOffset, yOffset, maxBoxWidth, maxAttrBoxHeight, "black", "white");
-        for (var attr of attrSizes) {
-          drawTextHLeft(ctx, xClassOffset, yOffset, xPadding, attr, "black");
-          yOffset += attr.height;
+        for (var x = 0 + xClusterShift; x < canvas.width; x += clusterSize) {
+          drawLine(ctx, x, 0, x, canvas.height, clusterColor);
         }
-
-        yOffset = yClassOffset + maxHeaderBoxSize + maxAttrBoxHeight;
-
-        drawRectangle(ctx, xClassOffset, yOffset, maxBoxWidth, maxMethBoxHeight, "black", "white");
-        for (var meth of methSizes) {
-          drawTextHLeft(ctx, xClassOffset, yOffset, xPadding, meth, "black");
-          yOffset += meth.height;
+        for (var y = 0 + yClusterShift; y < canvas.height; y += clusterSize) {
+          drawLine(ctx, 0, y, canvas.width, y, clusterColor);
         }
-
-        umlClass.width = maxBoxWidth;
-        umlClass.height = maxHeaderBoxSize + maxAttrBoxHeight + maxMethBoxHeight;
       }
+      // Draw connections
+      {
+        for(var connection of store.connections){
+          
+          
+          drawLine(ctx, 
+            store.viewOffset.x + connection.src.x + (connection.src.width / 2),
+            store.viewOffset.y + connection.src.y + (connection.src.height / 2),
+            store.viewOffset.x + connection.dst.x + (connection.dst.width / 2),
+            store.viewOffset.y + connection.dst.y + (connection.dst.height / 2),
+            "black");
+        }
+      }
+      // Draw classes
+      {
+        ctx.strokeStyle = "black";
+        ctx.fillStyle = "white";
+        ctx.font = "16px Arial";
+        for (var umlClass of store.classes) {
+          var xPadding = 16;
 
+          var titleSize = measureText(ctx, umlClass.toString());
+          var attrSizes = umlClass.attributes?.map(x => {
+            var measuredText = measureText(ctx, x.toString());
+            if (measuredText instanceof SingleTextBlock) {
+              measuredText.decoration.underline = x.isStatic ?? false;
+            }
+            return measuredText;
+          }) ?? [];
+          var methSizes = umlClass.methodes?.map(x => {
+            var measuredText = measureText(ctx, x.toString());
+            if (measuredText instanceof SingleTextBlock) {
+              measuredText.decoration.underline = x.isStatic ?? false;
+            }
+            return measuredText;
+          }) ?? [];
+
+          var maxHeaderBoxSize = titleSize.height + 8;
+          var maxBoxWidth = Math.max(
+            titleSize.width + xPadding,
+            ...methSizes?.map(x => x.width + xPadding),
+            ...attrSizes?.map(x => x.width + xPadding));
+          var maxAttrBoxHeight = Math.max(attrSizes?.reduce((p, c) => p + c.height, 0), 10);
+          var maxMethBoxHeight = Math.max(methSizes?.reduce((p, c) => p + c.height, 0), 10);
+
+          const xClassOffset = store.viewOffset.x + umlClass.x;
+          const yClassOffset = store.viewOffset.y + umlClass.y;
+
+          drawRectangle(ctx, xClassOffset, yClassOffset, maxBoxWidth, maxHeaderBoxSize, "black", "white");
+          drawTextHCenter(ctx, xClassOffset, yClassOffset + 4, maxBoxWidth, xPadding, titleSize, "black");
+
+          var yOffset = yClassOffset + maxHeaderBoxSize;
+          drawRectangle(ctx, xClassOffset, yOffset, maxBoxWidth, maxAttrBoxHeight, "black", "white");
+          for (var attr of attrSizes) {
+            drawTextHLeft(ctx, xClassOffset, yOffset, xPadding, attr, "black");
+            yOffset += attr.height;
+          }
+
+          yOffset = yClassOffset + maxHeaderBoxSize + maxAttrBoxHeight;
+
+          drawRectangle(ctx, xClassOffset, yOffset, maxBoxWidth, maxMethBoxHeight, "black", "white");
+          for (var meth of methSizes) {
+            drawTextHLeft(ctx, xClassOffset, yOffset, xPadding, meth, "black");
+            yOffset += meth.height;
+          }
+
+          umlClass.width = maxBoxWidth;
+          umlClass.height = maxHeaderBoxSize + maxAttrBoxHeight + maxMethBoxHeight;
+        }
+      }
+      
       changingsObserved = false;
     }
 
@@ -240,7 +263,8 @@ const App: Component = () => {
   }
 
   function findClassAt(position: { x: number, y: number }): UMLClass {
-    for (var umlClass of store.classes) {
+    for (var i = store.classes.length - 1; i >= 0; i--) {
+      const umlClass = store.classes[i];
       const mouseViewX = position.x - store.viewOffset.x;
       const mouseViewY = position.y - store.viewOffset.y;
 
@@ -249,6 +273,7 @@ const App: Component = () => {
         return umlClass;
       }
     }
+
     return undefined;
   }
 
@@ -265,7 +290,6 @@ const App: Component = () => {
         setCurrentClass(umlClass);
       }
     }
-
   }
 
   function onCanvasMouseMove(e: MouseEvent) {
@@ -417,6 +441,20 @@ const App: Component = () => {
     fileLoader.remove();
   }
 
+  setLocationContextMenu({x: 100, y:100});
+  onContextMenuAddClass();
+  setLocationContextMenu({x: 500, y:500});
+  onContextMenuAddClass();
+
+  setStore(
+    "connections",
+     store.connections.length,
+     {
+      src: store.classes[0],
+      dst: store.classes[1]
+    });
+  
+
   return (
     <div
       onClick={e => {
@@ -429,16 +467,20 @@ const App: Component = () => {
         hidden={!isContextMenuOpen()}
         location={locationContextMenu()} >
         <NavItem title={"Add Class"}
+          classExt={"hover:bg-gradient-to-r hover:from-cyan-500 hover:to-blue-500"}
           onclick={onContextMenuAddClass} />
-        <NavItem title="Delete class"
+        <NavItem title="Delete Class"
+          classExt={"hover:bg-red-500"}
           hidden={currentClass() === undefined}
           onclick={onContextMenuRemoveClass} />
         <NavItem title="Save image"
+          classExt={"hover:bg-gradient-to-r hover:from-cyan-500 hover:to-blue-500"}
           onclick={onContextMenuSaveImage} />
         <NavItem title="Save state"
+          classExt={"hover:bg-gradient-to-r hover:from-cyan-500 hover:to-blue-500"}
           onclick={onContextMenuSaveState} />
-        <NavItem
-          title="Load saved state"
+        <NavItem title="Load saved state"
+          classExt={"hover:bg-gradient-to-r hover:from-cyan-500 hover:to-blue-500"}
           onclick={onContextMenuLoadState} />
       </ContextMenu>
       <canvas
@@ -452,11 +494,14 @@ const App: Component = () => {
         <div id="side-nav" class="fixed flex min-h-screen max-h-screen top-0 right-0 p-4 min-w-[269px]">
           <div class="flex grow flex-col gap-4 ">
             <div class="bg-white rounded border border-sky-400 px-4 py-2 shadow">
-              <Label title="Class" />
-              <Field title='Name'
-                initValue={currentClass().name}
-                onInputChange={e => { currentClass().name = e.currentTarget.value; updateView() }} />
-              <CheckBox id="static" title="Abstract" value={currentClass().isAbstract} onChanges={updateIsStatic} />
+            <Label title="Class" />
+            <Field title='Property'
+              initValue={currentClass().property}
+              onInputChange={e => { currentClass().property = e.currentTarget.value; updateView() }} />
+            <Field title='Name'
+              initValue={currentClass().name}
+              onInputChange={e => { currentClass().name = e.currentTarget.value; updateView() }} />
+            <CheckBox id="static" title="Abstract" value={currentClass().isAbstract} onChanges={updateIsStatic} />
             </div>
             <div>
               <div class={`
@@ -465,67 +510,67 @@ const App: Component = () => {
                   ? "after:left-1/2"
                   : "after:left-0" }`}>
                 <div class='flex flex-row justify-between'>
-                  <button class={`py-1 w-full text-sm font-medium text-gray-700 rounded-t
-                  ${contentIndex() == 0 
-                    ? "bg-white border-sky-400 border-x border-t" 
+              <button class={`py-1 w-full text-sm font-medium text-gray-700 rounded-t
+              ${contentIndex() == 0
+                  ? "bg-white border-sky-400 border-x border-t"
                     : "border-gray-400 border-x border-t bg-white hover:border-sky-400 text-gray-400 hover:text-gray-700"}`}
-                    onclick={() => setContextIndex(0)}
-                    >Attributes</button>
+                onclick={() => setContextIndex(0)}
+              >Attributes</button>
                   <button class={`tpy-1 w-full text-sm font-medium text-gray-700 rounded-t
-                  ${contentIndex() == 1 
-                    ? "bg-white border-sky-400 border-x border-t" 
+              ${contentIndex() == 1
+                  ? "bg-white border-sky-400 border-x border-t"
                     : "border-gray-400 border-t border-r bg-white hover:border-sky-400 text-gray-400 hover:text-gray-700"}`}
-                    onclick={() => setContextIndex(1)}
-                    >Methodes</button>
+                onclick={() => setContextIndex(1)}
+              >Methodes</button>
                   {/* <Button title="" onclick={() => setContextIndex(1)} /> */}
-                </div>
+            </div>
               </div>
 
-              <Switch>
-                <Match when={contentIndex() == 0}>
+            <Switch>
+              <Match when={contentIndex() == 0}>
                   <div id="attr-container" class="-translate-y-[1px] flex flex-col h-full overflow-hidden bg-white max-h-max rounded-b border-x border-b border-sky-400 px-2 py-2 shadow">
-                    <Button title='Add attribute' onclick={pushAttribute} />
+                  <Button title='Add attribute' onclick={pushAttribute} />
                     <div class="overflow-y-auto h-full">
-                      <For each={currentClass().attributes}>
-                        {(attr, i) => <UMLAttributeContainer
-                          index={i()}
-                          attr={attr}
-                          onDrop={e => dropAttribute(i(), e)}
-                          update={updateView}
-                          delete={() => popAttribute(i())} />}
-                      </For>
-                    </div>
+                    <For each={currentClass().attributes}>
+                      {(attr, i) => <UMLAttributeContainer
+                        index={i()}
+                        attr={attr}
+                        onDrop={e => dropAttribute(i(), e)}
+                        update={updateView}
+                        delete={() => popAttribute(i())} />}
+                    </For>
                   </div>
-                </Match>
-                <Match when={contentIndex() == 1}>
+                </div>
+              </Match>
+              <Match when={contentIndex() == 1}>
                   <div id="meth-container" class="-translate-y-[1px] flex flex-col h-full overflow-hidden max-h-max bg-white rounded-b border-x border-b border-sky-400 px-2 py-2 shadow">
-                    <Button title='Add methode' onclick={pushMethode} />
+                  <Button title='Add methode' onclick={pushMethode} />
                     <div class="overflow-y-auto h-full">
-                      <For each={currentClass().methodes}>
-                        {(methode, iMethode) => {
-                          return (<UMLMethodeContainer
-                            index={iMethode()}
-                            methode={methode}
-                            onDrop={e => dropMethode(iMethode(), e)}
-                            update={updateView}
-                            delete={() => popMethode(iMethode())}
-                            onPushParameter={() => pushParameter(iMethode())}>
+                    <For each={currentClass().methodes}>
+                      {(methode, iMethode) => {
+                        return (<UMLMethodeContainer
+                          index={iMethode()}
+                          methode={methode}
+                          onDrop={e => dropMethode(iMethode(), e)}
+                          update={updateView}
+                          delete={() => popMethode(iMethode())}
+                          onPushParameter={() => pushParameter(iMethode())}>
 
-                            <For each={currentClass().methodes[iMethode()].parameters}>
-                              {(param, iParam) => <UMLParameterContainer
-                                param={param}
-                                popParameter={() => popParameter(iMethode(), iParam())}
-                                update={updateView}
-                              />}
-                            </For>
+                          <For each={currentClass().methodes[iMethode()].parameters}>
+                            {(param, iParam) => <UMLParameterContainer
+                              param={param}
+                              popParameter={() => popParameter(iMethode(), iParam())}
+                              update={updateView}
+                            />}
+                          </For>
 
-                          </UMLMethodeContainer>)
-                        }}
-                      </For>
-                    </div>
+                        </UMLMethodeContainer>)
+                      }}
+                    </For>
                   </div>
-                </Match>
-              </Switch>
+                </div>
+              </Match>
+            </Switch>
             </div>
           </div>
         </div>

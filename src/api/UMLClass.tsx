@@ -9,6 +9,7 @@ export interface IUMLClass {
   width?: number;
   height?: number;
   name: string;
+  property: string;
   isAbstract?: boolean;
   attributes: UMLAttribute[];
   methodes: UMLMethode[];
@@ -21,6 +22,7 @@ export class UMLClass implements IUMLClass {
   y: number;
   width?: number;
   height?: number;
+  property: string;
   name: string;
   isAbstract?: boolean;
   attributes: UMLAttribute[];
@@ -37,9 +39,13 @@ export class UMLClass implements IUMLClass {
 
   toString():string {
     var sb = new StringBuilder();
+    if(this.property){
+      sb.write("<<").write(this.property).write(">>").newline()
+    }
 
     sb.write(this.name);
-    if (this.isAbstract ?? false) {
+    
+    if (this.isAbstract) {
       sb.newline().write("{abstract}");
     }
 
