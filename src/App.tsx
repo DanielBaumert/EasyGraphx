@@ -492,7 +492,7 @@ const App: Component = () => {
         onContextMenu={onCanvasContextMenu} />
       <Show when={currentClass()}>
         <div id="side-nav" class="fixed flex min-h-screen max-h-screen top-0 right-0 p-4 min-w-[269px]">
-          <div class="flex grow flex-col gap-4 ">
+          <div class="flex grow flex-col">
             <div class="bg-white rounded border border-sky-400 px-4 py-2 shadow">
             <Label title="Class" />
             <Field title='Property'
@@ -504,34 +504,28 @@ const App: Component = () => {
             <CheckBox id="static" title="Abstract" value={currentClass().isAbstract} onChanges={updateIsStatic} />
             </div>
             <div>
-              <div class={`
-                relative z-10 after:p-b-[1px] after:border-b after:-translate-y-[1px] after:block after:border-sky-400 after:relative after:w-1/2
-                ${contentIndex() == 0 
-                  ? "after:left-1/2"
-                  : "after:left-0" }`}>
-                <div class='flex flex-row justify-between'>
-              <button class={`py-1 w-full text-sm font-medium text-gray-700 rounded-t
-              ${contentIndex() == 0
-                  ? "bg-white border-sky-400 border-x border-t"
+              <div class='flex flex-row justify-between'>
+                <button class={`py-1 w-full text-sm font-medium text-gray-700 rounded-t
+                  ${contentIndex() == 0
+                    ? "bg-white border-sky-400 border-x border-t"
                     : "border-gray-400 border-x border-t bg-white hover:border-sky-400 text-gray-400 hover:text-gray-700"}`}
-                onclick={() => setContextIndex(0)}
-              >Attributes</button>
-                  <button class={`tpy-1 w-full text-sm font-medium text-gray-700 rounded-t
-              ${contentIndex() == 1
-                  ? "bg-white border-sky-400 border-x border-t"
-                    : "border-gray-400 border-t border-r bg-white hover:border-sky-400 text-gray-400 hover:text-gray-700"}`}
-                onclick={() => setContextIndex(1)}
-              >Methodes</button>
-                  {/* <Button title="" onclick={() => setContextIndex(1)} /> */}
-            </div>
+                  onclick={() => setContextIndex(0)}
+                >Attributes</button>
+                <button class={`tpy-1 w-full text-sm font-medium text-gray-700 rounded-t
+                  ${contentIndex() == 1
+                    ? "bg-white border-sky-400 border-x border-t"
+                    : "border border-gray-400 bg-white border-b-sky-400  hover:border-sky-400 text-gray-400 hover:text-gray-700"}`}
+                  onclick={() => setContextIndex(1)}
+                >Methodes</button>
+                {/* <Button title="" onclick={() => setContextIndex(1)} /> */}
               </div>
-
+            </div>
             <Switch>
-              <Match when={contentIndex() == 0}>
-                  <div id="attr-container" class="-translate-y-[1px] flex flex-col h-full overflow-hidden bg-white max-h-max rounded-b border-x border-b border-sky-400 px-2 py-2 shadow">
+              <Match when={contentIndex() === 0} >
+                <div id="attr-container" class="flex flex-col overflow-hidden max-h-max bg-white rounded-b border-x border-b border-sky-400 p-2 shadow">
                   <Button title='Add attribute' onclick={pushAttribute} />
-                    <div class="overflow-y-auto h-full">
-                    <For each={currentClass().attributes}>
+                  <div class="overflow-y-auto h-full">
+                  <For each={currentClass().attributes}>
                       {(attr, i) => <UMLAttributeContainer
                         index={i()}
                         attr={attr}
@@ -542,11 +536,11 @@ const App: Component = () => {
                   </div>
                 </div>
               </Match>
-              <Match when={contentIndex() == 1}>
-                  <div id="meth-container" class="-translate-y-[1px] flex flex-col h-full overflow-hidden max-h-max bg-white rounded-b border-x border-b border-sky-400 px-2 py-2 shadow">
+              <Match when={contentIndex() === 1} >
+                <div id="meth-container" class="flex flex-col overflow-hidden max-h-max bg-white rounded-b border-x border-b border-sky-400 p-2 shadow">
                   <Button title='Add methode' onclick={pushMethode} />
-                    <div class="overflow-y-auto h-full">
-                    <For each={currentClass().methodes}>
+                  <div class="overflow-y-auto h-full">
+                  <For each={currentClass().methodes}>
                       {(methode, iMethode) => {
                         return (<UMLMethodeContainer
                           index={iMethode()}
@@ -571,7 +565,6 @@ const App: Component = () => {
                 </div>
               </Match>
             </Switch>
-            </div>
           </div>
         </div>
       </Show>
