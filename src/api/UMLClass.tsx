@@ -28,10 +28,10 @@ export class UMLClass implements IUMLClass {
   attributes: UMLAttribute[];
   methodes: UMLMethode[];
 
-  constructor(location: Point) { 
+  constructor(position: Point) { 
     this.uuid = crypto.randomUUID();
-    this.x = location.x;
-    this.y = location.y;
+    this.x = position.x;
+    this.y = position.y;
     this.name = "class";
     this.attributes = [];
     this.methodes = [];
