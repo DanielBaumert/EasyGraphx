@@ -20,11 +20,11 @@ const [store, setStore] = createStore<
   {
     classes: UMLClass[],
     grid:{ 
-      gridSpace: number,
-      gridColor: string|CanvasGradient|CanvasPattern,
-      subGridVisuale: boolean,
-      subGridColor: string|CanvasGradient|CanvasPattern,
-      subGridCount: number,
+      space: number,
+      color: string|CanvasGradient|CanvasPattern,
+      subVisuale: boolean,
+      subColor: string|CanvasGradient|CanvasPattern,
+      subCount: number,
     },
     hoverClass?: UMLClass,
     hoverBorder: boolean,
@@ -36,11 +36,11 @@ const [store, setStore] = createStore<
   }>({
     classes: [],
     grid:{
-      gridColor: "#00505033",
-      gridSpace: 24,
-      subGridVisuale: true,
-      subGridColor: "#00505011",
-      subGridCount: 3
+      color: "#00505033",
+      space: 64,
+      subVisuale: true,
+      subColor: "#00505011",
+      subCount: 3
     },
     hoverClass: undefined,
     hoverBorder: false,
@@ -99,40 +99,40 @@ const App: Component = () => {
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
       // Draw background
       {
-        const gridSize = store.grid.gridSpace * store.zoom;
+        const gridSize = store.grid.space * store.zoom;
         const xClusterShift = (store.viewOffset.x % gridSize);
         const yClusterShift = (store.viewOffset.y % gridSize);
 
-        if(store.grid.subGridVisuale) { 
-          const subGridSize = gridSize / (1 +store.grid.subGridCount);
+        if(store.grid.subVisuale) { 
+          const subGridSize = gridSize / (1 +store.grid.subCount);
           console.log(subGridSize);
           for (var x = -gridSize + xClusterShift; x < canvas.width + gridSize;) {
-            drawLine(ctx, x, 0, x, canvas.height, store.grid.gridColor);
+            drawLine(ctx, x, 0, x, canvas.height, store.grid.color);
 
-            for(var sx = 0; sx < store.grid.subGridCount; sx++){ 
+            for(var sx = 0; sx < store.grid.subCount; sx++){ 
               x += subGridSize;
-              drawLine(ctx, x, 0, x, canvas.height, store.grid.subGridColor);
+              drawLine(ctx, x, 0, x, canvas.height, store.grid.subColor);
             }
 
             x += subGridSize;
           }
 
           for (var y = -gridSize + yClusterShift; y < canvas.height + gridSize;) {
-            drawLine(ctx, 0, y, canvas.width, y, store.grid.gridColor);
+            drawLine(ctx, 0, y, canvas.width, y, store.grid.color);
 
-            for(var sy = 0; sy < store.grid.subGridCount; sy++){ 
+            for(var sy = 0; sy < store.grid.subCount; sy++){ 
               y += subGridSize;
-              drawLine(ctx, 0, y, canvas.width, y, store.grid.subGridColor);
+              drawLine(ctx, 0, y, canvas.width, y, store.grid.subColor);
             }
             
             y += subGridSize;
           }
         } else{ 
           for (var x = 0 + xClusterShift; x < canvas.width; x += gridSize) {
-            drawLine(ctx, x, 0, x, canvas.height, store.grid.gridColor);
+            drawLine(ctx, x, 0, x, canvas.height, store.grid.color);
           }
           for (var y = 0 + yClusterShift; y < canvas.height; y += gridSize) {
-            drawLine(ctx, 0, y, canvas.width, y, store.grid.gridColor);
+            drawLine(ctx, 0, y, canvas.width, y, store.grid.color);
           }
         }
       }
