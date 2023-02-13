@@ -60,6 +60,7 @@ export const UMLMethodeContainer: ParentComponent<{
     onPushParameter: Function
 }> = (props) => {
     const [isExpanded, setExpanded] = createSignal<boolean>();
+    const [isMethodeNameNotEmpty, setMethodeNameNotEmpty] = createSignal<boolean>(props.methode.name !== "");
 
     function onDragStart(e: DragEvent) {
         e.dataTransfer.setData("number", props.index.toString());
@@ -70,13 +71,13 @@ export const UMLMethodeContainer: ParentComponent<{
             onDrop={props.onDrop}
             onDragOver={e => e.preventDefault()}
             onDragStart={onDragStart}
-            class="relative flex flex-row bg-white rounded border border-sky-400 p-2 mb-2 shadow">
+            class={`relative flex flex-row bg-white rounded border ${isMethodeNameNotEmpty() ? "border-sky-400" : "border-red-400"} p-2 mb-2 shadow`}>
             <Show when={isExpanded()}>
                 <div class="flex flex-col">
                     <Field
                         title="Name"
                         initValue={props.methode.name}
-                        onInputChange={e => { props.methode.name = e.currentTarget.value; props.update() }} />
+                        onInputChange={e => { props.methode.name = e.currentTarget.value; setMethodeNameNotEmpty(props.methode.name !== ""); props.update() }} />
                     <CheckBox
                         id={`static-methode-${props.index}`}
                         title="Static"
@@ -106,10 +107,8 @@ export const UMLMethodeContainer: ParentComponent<{
             </Show>
             <Show when={!isExpanded()}>
                 <label for={this}
-                    class=" text-sm text-gray-500 
-                dark:text-gray-400 duration-300 
-                scale-75 origin-[0]">
-                    {props.methode.name}
+                    class="text-sm text-gray-500 duration-300 scale-75 origin-[0]">
+                    {isMethodeNameNotEmpty() ? props.methode.name : "unnamed"}
                 </label>
             </Show>
             <div class="absolute flex flex-row top-1.5 right-1">

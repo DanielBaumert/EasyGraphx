@@ -52,6 +52,7 @@ export const UMLAttributeContainer: Component<{
     update: Function,
 }> = (props) => {
     const [isExpanded, setExpanded] = createSignal<boolean>();
+    const [isAttributeNameNotEmpty, setAttributeNameNotEmpty] = createSignal<boolean>(props.attr.name !== "");
 
     function onDragStart(e:DragEvent) { 
         e.dataTransfer.setData("number", props.index.toString());
@@ -62,12 +63,12 @@ export const UMLAttributeContainer: Component<{
             onDrop={props.onDrop} 
             onDragOver={e => e.preventDefault()} 
             onDragStart={onDragStart} 
-            class="relative flex flex-row bg-white rounded border border-sky-400 p-2 mb-2 shadow">
+            class={`relative flex flex-row bg-white rounded border ${isAttributeNameNotEmpty() ? "border-sky-400" : "border-red-400"} p-2 mb-2 shadow`}>
             <Show when={isExpanded()}>
                 <div class="flex flex-col">
                     <Field title="Name"
                         initValue={props.attr.name}
-                        onInputChange={e => { props.attr.name = e.currentTarget.value; props.update() }} />
+                        onInputChange={e => { props.attr.name = e.currentTarget.value; setAttributeNameNotEmpty(props.attr.name !== ""); props.update() }} />
                     <div class="grid grid-cols-2">
                         <CheckBox 
                             id={`static-attribute-${props.index}`} 
@@ -106,11 +107,11 @@ export const UMLAttributeContainer: Component<{
                 text-sm text-gray-500 
                 dark:text-gray-400 duration-300 
                 scale-75 origin-[0]">
-                {props.attr.name}
+                {isAttributeNameNotEmpty() ? props.attr.name : "unnamed"}
             </label>
             </Show>
             <div class="absolute flex flex-row top-1.5 right-1">
-                <div class={isExpanded() ? 'group rotate-180' : 'group'} onClick={e => { setExpanded(!isExpanded()); console.log("expande");}}>
+                <div class={isExpanded() ? 'group rotate-180' : 'group'} onClick={() => setExpanded(!isExpanded())}>
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 shrink-0 fill-gray-500 group-hover:fill-black" fill="none" viewBox="0 0 20 20" >
                         <path stroke-linecap="round" stroke-linejoin="round" d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' />
                     </svg>
