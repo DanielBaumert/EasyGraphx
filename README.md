@@ -32,3 +32,12 @@ Your app is ready to be deployed!
 ## Deployment
 
 You can deploy the `dist` folder to any static host provider (netlify, surge, now, etc.)
+
+
+## Tasks 
+- [ ] Web RTC
+- [ ] Derive line/arrow improvment
+  - [ ] Config
+  - [ ] Arrow rotation
+  - [ ] etc.
+- [ ] Derives searchbar
