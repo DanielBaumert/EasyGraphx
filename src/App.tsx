@@ -1,54 +1,60 @@
 import { Component, createSignal, For, Match, onMount, Show, Switch } from 'solid-js';
 import { createStore } from "solid-js/store";
 import { Button } from './api/Button';
-import { CheckBox } from './api/CheckBox';
+import { CheckBox, CheckBoxSlim } from './api/CheckBox';
 import { ContextMenu, NavItem } from './api/ContextMenu';
-import { drawTextHCenter, measureText, drawRectangle, drawTextHLeft, Point, SingleTextBlock, drawLine, drawCircel, drawCircels, strokeRectangle, Math2 } from './api/DrawUtils';
+import { drawTextHCenter, measureText, drawRectangle, drawTextHLeft, Point, SingleTextBlock, drawLine, fillTriangle, drawDotLine } from './api/DrawUtils';
 import { Field } from './api/Field';
 import { Label } from './api/Label';
 import { UMLAttribute, UMLAttributeContainer } from './api/UMLAttribute';
 import { UMLClass } from './api/UMLClass';
 import { UMLMethode, UMLMethodeContainer } from './api/UMLMethode';
 import { UMLParameter, UMLParameterContainer } from './api/UMLParameter';
-
-type Connector = {
-  src: UMLClass,
-  dst: UMLClass
-};
+import { IUMLDerive, UMLClassDerive, UMLInterfaceDerive } from './api/UMLDerive';
 
 const [store, setStore] = createStore<
   {
     classes: UMLClass[],
-    grid:{ 
+    grid: {
       space: number,
-      color: string|CanvasGradient|CanvasPattern,
+      color: string | CanvasGradient | CanvasPattern,
       subVisuale: boolean,
-      subColor: string|CanvasGradient|CanvasPattern,
+      subColor: string | CanvasGradient | CanvasPattern,
       subCount: number,
     },
+    derives: IUMLDerive[],
+    selectedClassOffset: Point,
     hoverClass?: UMLClass,
     hoverBorder: boolean,
-    connections: Connector[],
+    mouseDown: Point,
     mouse: Point,
     readyToMove: boolean,
     viewOffset: Point,
-    zoom:number,
+    zoom: number,
+    rtc : {
+      target: string
+    }
   }>({
     classes: [],
-    grid:{
+    derives: [],
+    grid: {
       color: "#00505033",
       space: 64,
       subVisuale: true,
       subColor: "#00505011",
-      subCount: 3
+      subCount: 3,
     },
-    hoverClass: undefined,
+    selectedClassOffset: {x: 0, y: 0},
+    hoverClass: null,
     hoverBorder: false,
-    connections: [],
+    mouseDown: { x: 0, y: 0 },
     mouse: { x: 0, y: 0 },
     readyToMove: false,
     viewOffset: { x: 0, y: 0 },
-    zoom: 1.0
+    zoom: 1.0,
+    rtc : {
+      target: ""
+    }
   });
 
 // var exampleClass = new UMLClass();
@@ -64,13 +70,16 @@ const [store, setStore] = createStore<
 // exampleClass.methodes.push(exampleMethode);
 // exampleClass.methodes.push(exampleMethode);
 
+
+
+
 var changingsObserved: boolean = true;
 
 const App: Component = () => {
   const [isContextMenuOpen, setContextMenuOpen] = createSignal<boolean>(false);
-  const [currentClass, setCurrentClass] = createSignal<UMLClass>(undefined, { equals: false });
+  const [currentClass, setCurrentClass] = createSignal<UMLClass>(null, { equals: false });
   const [contentIndex, setContextIndex] = createSignal<number>(0);
-  const [locationContextMenu, setLocationContextMenu] = createSignal<Point>(undefined);
+  const [locationContextMenu, setLocationContextMenu] = createSignal<Point>(null);
 
   let frameNumber: number;
   let canvas: HTMLCanvasElement;
@@ -91,25 +100,25 @@ const App: Component = () => {
   function updateView() {
     changingsObserved = true;
   }
-
   function render(ctx: CanvasRenderingContext2D) {
     if (changingsObserved) {
       ctx.imageSmoothingQuality = 'high';
       ctx.imageSmoothingEnabled = true;
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+      const gridSize = store.grid.space * store.zoom;
+      const subGridSize = gridSize / (1 + store.grid.subCount);
+
       // Draw background
       {
-        const gridSize = store.grid.space * store.zoom;
         const xClusterShift = (store.viewOffset.x % gridSize);
         const yClusterShift = (store.viewOffset.y % gridSize);
 
-        if(store.grid.subVisuale) { 
-          const subGridSize = gridSize / (1 +store.grid.subCount);
-          console.log(subGridSize);
+        if (store.grid.subVisuale) {
           for (var x = -gridSize + xClusterShift; x < canvas.width + gridSize;) {
             drawLine(ctx, x, 0, x, canvas.height, store.grid.color);
 
-            for(var sx = 0; sx < store.grid.subCount; sx++){ 
+            for (var sx = 0; sx < store.grid.subCount; sx++) {
               x += subGridSize;
               drawLine(ctx, x, 0, x, canvas.height, store.grid.subColor);
             }
@@ -120,14 +129,14 @@ const App: Component = () => {
           for (var y = -gridSize + yClusterShift; y < canvas.height + gridSize;) {
             drawLine(ctx, 0, y, canvas.width, y, store.grid.color);
 
-            for(var sy = 0; sy < store.grid.subCount; sy++){ 
+            for (var sy = 0; sy < store.grid.subCount; sy++) {
               y += subGridSize;
               drawLine(ctx, 0, y, canvas.width, y, store.grid.subColor);
             }
-            
+
             y += subGridSize;
           }
-        } else{ 
+        } else {
           for (var x = 0 + xClusterShift; x < canvas.width; x += gridSize) {
             drawLine(ctx, x, 0, x, canvas.height, store.grid.color);
           }
@@ -136,23 +145,11 @@ const App: Component = () => {
           }
         }
       }
-      // Draw connections
-      {
-        for(var connection of store.connections){
-
-          drawLine(ctx, 
-            store.viewOffset.x + (connection.src.x * store.zoom) + (connection.src.width / 2),
-            store.viewOffset.y + (connection.src.y * store.zoom) + (connection.src.height / 2),
-            store.viewOffset.x + (connection.dst.x * store.zoom) + (connection.dst.width / 2),
-            store.viewOffset.y + (connection.dst.y * store.zoom) + (connection.dst.height / 2),
-            "black");
-        }
-      }
       // Draw classes
       {
         ctx.strokeStyle = "black";
         ctx.fillStyle = "white";
-        ctx.font =  `${16 * store.zoom}px Arial`;
+        ctx.font = `${16 * store.zoom}px Arial`;
         const xPadding = 16 * store.zoom;
 
         for (var umlClass of store.classes) {
@@ -173,37 +170,189 @@ const App: Component = () => {
           }) ?? [];
 
           var maxHeaderBoxSize = titleSize.height + (xPadding / 2);
-          var maxBoxWidth = Math.max(
-            titleSize.width + xPadding,
-            ...methSizes?.map(x => x.width + xPadding),
-            ...attrSizes?.map(x => x.width + xPadding));
+          var maxBoxWidth =
+            Math.ceil(
+              Math.max(
+                titleSize.width + xPadding,
+                ...methSizes?.map(x => x.width + xPadding),
+                ...attrSizes?.map(x => x.width + xPadding)) / subGridSize) 
+            * subGridSize - 1;
+
+
           var maxAttrBoxHeight = Math.max(attrSizes?.reduce((p, c) => p + c.height, 0), 10 * store.zoom);
           var maxMethBoxHeight = Math.max(methSizes?.reduce((p, c) => p + c.height, 0), 10 * store.zoom);
 
           const xClassOffset = store.viewOffset.x + (umlClass.x * store.zoom);
           const yClassOffset = store.viewOffset.y + (umlClass.y * store.zoom);
 
-          drawRectangle(ctx, xClassOffset, yClassOffset, maxBoxWidth, maxHeaderBoxSize, "black", "white");
+          let borderColor : string = umlClass.uuid === currentClass()?.uuid 
+            ? "green"
+            : "black";
+          
+          // draw heder 
+          drawRectangle(ctx, xClassOffset, yClassOffset, maxBoxWidth, maxHeaderBoxSize, borderColor, "white");
           drawTextHCenter(ctx, xClassOffset, yClassOffset + (xPadding / 4), maxBoxWidth, xPadding, titleSize, "black");
 
+          // draw attributes
           var yOffset = yClassOffset + maxHeaderBoxSize;
-          drawRectangle(ctx, xClassOffset, yOffset, maxBoxWidth, maxAttrBoxHeight, "black", "white");
+          drawRectangle(ctx, xClassOffset, yOffset, maxBoxWidth, maxAttrBoxHeight, borderColor, "white");
           for (var attr of attrSizes) {
             drawTextHLeft(ctx, xClassOffset, yOffset, xPadding, attr, "black");
             yOffset += attr.height;
           }
 
+          // draw methodes
           yOffset = yClassOffset + maxHeaderBoxSize + maxAttrBoxHeight;
-
-          drawRectangle(ctx, xClassOffset, yOffset, maxBoxWidth, maxMethBoxHeight, "black", "white");
+          drawRectangle(ctx, xClassOffset, yOffset, maxBoxWidth, maxMethBoxHeight, borderColor, "white");
           for (var meth of methSizes) {
             drawTextHLeft(ctx, xClassOffset, yOffset, xPadding, meth, "black");
             yOffset += meth.height;
           }
 
+          // set new size
           umlClass.width = maxBoxWidth;
           umlClass.height = maxHeaderBoxSize + maxAttrBoxHeight + maxMethBoxHeight;
         }
+      }
+
+      // Draw connections
+      {
+
+        for (const derive of store.derives) {
+          // calc vector
+          let lineMode = derive instanceof UMLInterfaceDerive
+            ? drawDotLine
+            : drawLine;
+          
+          if(derive.parent.x < derive.children.x) {
+            // parent left
+            let dx = (derive.children.x - derive.parent.x);
+            let dy = (derive.children.y - derive.parent.y);
+            let m = dy / dx;
+            
+            let srcx = store.viewOffset.x + derive.parent.x + derive.parent.width;
+            let srcy = store.viewOffset.y + derive.parent.y + (derive.parent.height * .5);
+
+            let dstx = store.viewOffset.x + derive.children.x;
+            let dsty = store.viewOffset.y + derive.children.y + (derive.children.height * .5);
+
+            lineMode(ctx, srcx, srcy, dstx, dsty, "black");
+            fillTriangle(ctx, srcx, srcy, 16, 16, m, "black", "white");
+          } else { 
+            // parent right
+            let dx = (derive.parent.x - derive.children.x);
+            let dy = (derive.parent.y - derive.children.y);
+            let m = dy / dx + Math.PI;
+            
+            let srcx = store.viewOffset.x + derive.children.x +  derive.children.width;
+            let srcy = store.viewOffset.y + derive.children.y + (derive.children.height * .5);
+
+            let dstx = store.viewOffset.x + derive.parent.x;
+            let dsty = store.viewOffset.y + derive.parent.y + (derive.parent.height * .5);
+
+            lineMode(ctx, srcx, srcy, dstx, dsty, "black");
+            fillTriangle(ctx, dstx, dsty, 16, 16, m, "black", "white");
+          }
+        }
+
+
+      //   for (var connection of store.connections) {
+      //     const direction = [
+      //       Math.sign(connection.dst.x - connection.src.x), 
+      //       Math.sign(connection.dst.y - connection.dst.x)
+      //     ];
+
+      //     const rightSide = connection.src.x + connection.src.width;
+      //     const distanceY = (connection.dst.y + (connection.dst.height / 2))
+      //       - (connection.src.y + (connection.src.height / 2));
+          
+      //       switch(true) { 
+      //         case connection.src.y == connection.dst.y: 
+      //           // horizontal alined
+      //           { 
+      //             const srcY = connection.src.y * store.zoom;
+                  
+      //             const srcCenterH = 
+      //               store.viewOffset.y 
+      //               + srcY 
+      //               + (connection.src.height <= connection.dst.height 
+      //                 ? connection.src.height / 2
+      //                 : connection.dst.height / 2);
+
+      //             const [startX, endX] = connection.src.x + connection.src.width < connection.dst.x 
+      //               ? [ connection.src.x * store.zoom + connection.src.width,
+      //                   connection.dst.x * store.zoom]
+      //               : [ connection.dst.x * store.zoom + connection.dst.width,
+      //                   connection.src.x * store.zoom ];
+                    
+      //             ctx.strokeStyle = "black";
+      //             ctx.beginPath();
+      //             ctx.moveTo(
+      //               store.viewOffset.x + startX,
+      //               srcCenterH);
+      //             ctx.lineTo(
+      //               store.viewOffset.x + endX,
+      //               srcCenterH);
+      //             ctx.stroke();
+      //           }
+      //           break;
+      //         case connection.src.x + (connection.src.width / 2) === connection.dst.x + (connection.dst.width / 2): 
+      //           // vertical alined
+      //           {
+      //             const src = connection.src,
+      //                   dst = connection.dst;
+      //             const srcY = src.y * store.zoom;
+
+      //             const center = store.viewOffset.x + srcY + src.width / 2;
+      //             const startY = Math.min(src.y + src.height, dst.y);
+      //             const endY = Math.max(src.y, dst.y);
+
+    
+      //             ctx.strokeStyle = "black";
+      //             ctx.beginPath();
+      //             ctx.moveTo(center, startY);
+      //             ctx.lineTo(center, endY);
+      //             ctx.stroke();
+      //           }
+      //         case connection.src.x <= connection.dst.x && connection.dst.x <= connection.src.x + connection.src.width: 
+      //           {
+      //             const src = connection.src,
+      //                   dst = connection.dst;
+      //             const srcY = src.y * store.zoom,
+      //                   dstY = dst.y * store.zoom;
+
+      //             const srcCenterV = Math.min(src.width, dst.width) / 2;
+                
+      //           }
+      //           break;
+      //         default:
+      //           const srcX = connection.src.x * store.zoom;
+      //           const srcY = connection.src.y * store.zoom;
+      //           const dstX = connection.dst.x * store.zoom;
+      //           const dstY = connection.dst.y * store.zoom;
+
+      //           const srcCenterH = connection.src.height / 2;
+      //           const dstCenterH = connection.dst.height / 2;
+      //           const distanceX = connection.dst.x - rightSide;
+      //           const src2dstCenter = connection.src.width + (distanceX / 2);
+
+      //           ctx.beginPath();
+      //           ctx.moveTo(
+      //             store.viewOffset.x + srcX + connection.src.width,
+      //             store.viewOffset.y + srcY + srcCenterH);
+      //           ctx.lineTo( // to center
+      //             store.viewOffset.x + srcX + src2dstCenter, 
+      //             store.viewOffset.y + srcY + srcCenterH);
+      //           ctx.lineTo( // to down
+      //             store.viewOffset.x + srcX + src2dstCenter, 
+      //             store.viewOffset.y + dstY + dstCenterH);
+      //           ctx.lineTo(
+      //             store.viewOffset.x + dstX, 
+      //             store.viewOffset.y + dstY + dstCenterH);
+      //           ctx.stroke();
+      //           break;
+      //       }
+      //   }
       }
       // Draw hover class effect
       {
@@ -292,6 +441,38 @@ const App: Component = () => {
     setCurrentClass(currentClass());
     updateView();
   }
+
+  /*
+   * derives
+   */
+  function pushDerive(parentIndex: number) {
+    let parent: UMLClass = store.classes[parentIndex];
+    if(parent?.property?.toLowerCase() === "interface"){ 
+      setStore(
+        "derives",
+        store.derives.length,
+        new UMLInterfaceDerive(parent, currentClass()));
+    } else { 
+      setStore(
+        "derives",
+        store.derives.length,
+        new UMLClassDerive(parent, currentClass()));
+    }
+    setCurrentClass(currentClass());
+    updateView();
+  }
+
+  function deleteDerive(parentIndex: number) {
+    let parent: UMLClass = store.classes[parentIndex];
+    setStore(
+      "derives",
+      store.derives.filter(x => x.parent.uuid !== parent.uuid && x.children.uuid !== currentClass().uuid));
+    updateView();
+  }
+
+  /*
+   * UI related methodes
+   */
   function updateReadyToMove(state: boolean) {
     setStore("readyToMove", (readyToMove) => {
       readyToMove = state;
@@ -304,102 +485,116 @@ const App: Component = () => {
       updateView();
     }
   }
-  function updateMousePos(mouseEvent: MouseEvent) {
-    setStore("mouse", mouseEvent);
-  }
   function findClassAt(position: Point): UMLClass {
     for (var i = store.classes.length - 1; i >= 0; i--) {
       const umlClass = store.classes[i];
       const mouseViewX = position.x - store.viewOffset.x;
       const mouseViewY = position.y - store.viewOffset.y;
 
-      if  ((umlClass.x * store.zoom) <= mouseViewX && mouseViewX <= (umlClass.x * store.zoom) + umlClass.width
-        && (umlClass.y * store.zoom) <= mouseViewY && mouseViewY <= (umlClass.y * store.zoom) + umlClass.height) {
+      if ((umlClass.x * store.zoom) <= mouseViewX // left
+        && mouseViewX <= (umlClass.x * store.zoom) + umlClass.width // right
+        && (umlClass.y * store.zoom) <= mouseViewY // top
+        && mouseViewY <= (umlClass.y * store.zoom) + umlClass.height /* bottom */) {
         return umlClass;
       }
     }
 
-    return undefined;
+    return null;
   }
+  
+
   /*
    * Canvas
    */
-  function onCanvasScroll(e: WheelEvent){ 
-    if(e.deltaY > 0) { 
-      setStore("zoom", store.zoom * 0.9);
-      updateView();
-    } else { 
-      setStore("zoom", store.zoom * 1.1);
-      updateView();
-    }
+  function onCanvasScroll(e: WheelEvent) {
+    // if (e.deltaY > 0) {
+    //   setStore("zoom", store.zoom * 0.9);
+    //   updateView();
+    // } else {
+    //   setStore("zoom", store.zoom * 1.1);
+    //   updateView();
+    // }
   }
+
   function onCanvasMouseDown(e: MouseEvent) {
-    setCurrentClass();
+    setCurrentClass(null);
     if (e.buttons === 1) {
-      updateMousePos(e);
+      setStore("mouse", e);
+      setStore("mouseDown", e);
       var umlClass = findClassAt(e);
       if (umlClass) {
         updateReadyToMove(true);
         setCurrentClass(umlClass);
+        setStore(
+          "selectedClassOffset", 
+          {
+            x: (e.x - umlClass.x), 
+            y: (e.y - umlClass.y)
+          });
       }
     }
   }
   function onCanvasMouseMove(e: MouseEvent) {
-    var newHoverClass = findClassAt(e);
-    if(newHoverClass === undefined && store.hoverClass !== undefined){ 
+    let newHoverClass = findClassAt(e);
+    if (newHoverClass === null && store.hoverClass !== null) {
       setStore("hoverClass", newHoverClass);
-      canvas.style["cursor"] = "default" 
+      canvas.style["cursor"] = "default"
       updateView();
-    } else if(newHoverClass !== undefined) {
+    } else if (newHoverClass !== null) {
       // a class below the mouse is found
-      if(store.hoverClass?.uuid !== newHoverClass.uuid) { 
+      if (store.hoverClass?.uuid !== newHoverClass.uuid) {
         // is the curret newHoverClass not the same below the mouse
         setStore("hoverClass", newHoverClass);
         //canvas.style["cursor"] = "move";
         updateView();
-      } else { 
+      } else {
         const mouseViewX = e.x - store.viewOffset.x;
         const mouseViewY = e.y - store.viewOffset.y;
         const rightBorder = store.hoverClass.x + store.hoverClass.width;
         const bottomBorder = store.hoverClass.y + store.hoverClass.height;
-        if(
+        if (
           !store.hoverBorder &&
           (store.hoverClass.x - 5 <= mouseViewX && mouseViewX <= store.hoverClass.x + 5 // left side hover
-          || store.hoverClass.y - 5 <= mouseViewY && mouseViewY + store.viewOffset.y <= store.hoverClass.y + 5 // top side hover
-          || rightBorder - 5 <= mouseViewX && mouseViewX <= rightBorder + 5 //
-          || bottomBorder - 5 <= mouseViewY && mouseViewY <= bottomBorder + 5))
-        {
+            || store.hoverClass.y - 5 <= mouseViewY && mouseViewY + store.viewOffset.y <= store.hoverClass.y + 5 // top side hover
+            || rightBorder - 5 <= mouseViewX && mouseViewX <= rightBorder + 5 //
+            || bottomBorder - 5 <= mouseViewY && mouseViewY <= bottomBorder + 5)) {
           // if the mouse near the border and the hoverBorder is not set => set border hover
           setStore("hoverBorder", true);
           updateView();
-        } else if(store.hoverBorder) { 
+        } else if (store.hoverBorder) {
           // if hoverBorder set but the mouse not close to the border => deselect border hover
           setStore("hoverBorder", false);
           updateView();
         }
       }
     }
+
     if (e.buttons === 1) {
-      var deltaX = e.x - store.mouse.x;
-      var deltaY = e.y - store.mouse.y;
+      // primary mouse button is pressed
       if (currentClass() && store.readyToMove) {
-        currentClass().x += deltaX * (1 / store.zoom);
-        currentClass().y += deltaY * (1 / store.zoom);
+        // If the primary button fell on a class while pressed
+        const gridSnap = (store.grid.space / (1 + store.grid.subCount)) * store.zoom;
+
+        const deltaX = (e.x - store.selectedClassOffset.x) * (1 / store.zoom);
+        const deltaY = (e.y - store.selectedClassOffset.y) * (1 / store.zoom);
+
+        currentClass().x = Math.floor((deltaX) / gridSnap) * gridSnap;
+        currentClass().y = Math.floor((deltaY) / gridSnap) * gridSnap;
 
         setCurrentClass(currentClass());
         updateView();
       } else {
+        // if the primary button goes down on a class
         setStore(
           "viewOffset",
           {
-            x: store.viewOffset.x + deltaX,
-            y: store.viewOffset.y + deltaY
-          })
+            x: store.viewOffset.x + (e.x - store.mouse.x),
+            y: store.viewOffset.y + (e.y - store.mouse.y)
+          });
         updateView();
       }
     }
-
-    updateMousePos(e);
+    setStore("mouse", e);
   }
   function onCanvasMouseUp(e: MouseEvent) {
     if (currentClass() && e.buttons === 0 && store.readyToMove) {
@@ -417,14 +612,32 @@ const App: Component = () => {
    * Context Menu
    */
   function onContextMenuAddClass() {
-    const newClass = new UMLClass(locationContextMenu());
-    setStore("classes", store.classes.length, newClass);
-    updateView()
+    const zoomFacktor = 1 / store.zoom;
+    let { x, y } = locationContextMenu();
+    x = (x - store.viewOffset.x) * zoomFacktor;
+    y = (y - store.viewOffset.y) * zoomFacktor;
+
+    const gridSnap = (store.grid.space * store.zoom) / (1 + store.grid.subCount);
+    setStore(
+      "classes",
+      store.classes.length,
+      new UMLClass({
+        x: x - (x % gridSnap),
+        y: y - (y % gridSnap)
+      }));
+    updateView();
   }
   function onContextMenuRemoveClass() {
+    // remove class from store
     setStore(
       "classes",
       store.classes.filter(x => x.uuid !== currentClass().uuid));
+    
+    // remove derives from that class
+    setStore(
+      "derives",
+      store.derives.filter(x => x.parent.uuid !== currentClass().uuid))
+      
     updateView();
   }
   function onContextMenuSaveImage() {
@@ -437,8 +650,10 @@ const App: Component = () => {
   function onContextMenuSaveState() {
     const link = document.createElement("a");
     var file = new Blob(
-      [JSON.stringify(store.classes)],
-      { type: 'application/json;charset=utf-8' });
+      [JSON.stringify({
+        classes: store.classes,
+        derives: store.derives
+      })],{ type: 'application/json;charset=utf-8' });
     link.download = 'config.json';
     link.href = URL.createObjectURL(file);
     link.click();
@@ -464,11 +679,15 @@ const App: Component = () => {
       var jsonArray = JSON.parse(content);
 
       setStore("classes", []);
-      for (var element of jsonArray) {
+      setStore("derives", []);
+
+
+      for (var element of jsonArray.classes) {
         const cls = new UMLClass({
           x: element["x"] ?? 0,
           y: element["y"] ?? 0
         });
+        cls.uuid = element["uuid"];
         cls.name = element["name"],
         cls.width = element["width"];
         cls.height = element["height"];
@@ -478,11 +697,11 @@ const App: Component = () => {
           const attr: UMLAttribute = new UMLAttribute();
           attr.isStatic = attrElement["isStatic"] ?? false;
           attr.isConstant = attrElement["isConstant"] ?? false;
-          attr.accessModifier = attrElement["accessModifier"] ?? undefined;
+          attr.accessModifier = attrElement["accessModifier"] ?? null;
           attr.name = attrElement["name"];
-          attr.type = attrElement["type"] ?? undefined;
-          attr.multiplicity = attrElement["multiplicity"] ?? undefined;
-          attr.defaultValue = attrElement["defaultValue"] ?? undefined;
+          attr.type = attrElement["type"] ?? null;
+          attr.multiplicity = attrElement["multiplicity"] ?? null;
+          attr.defaultValue = attrElement["defaultValue"] ?? null;
 
           cls.attributes.push(attr);
         }
@@ -492,14 +711,14 @@ const App: Component = () => {
 
           meth.isStatic = methElement["isStatic"] ?? false;
           meth.name = methElement["name"] ?? "methode";
-          meth.returnType = methElement["returnType"] ?? undefined;
-          meth.accessModifier = methElement["accessModifier"] ?? undefined;
+          meth.returnType = methElement["returnType"] ?? null;
+          meth.accessModifier = methElement["accessModifier"] ?? null;
           meth.parameters = [];
 
           for (var paramElement of methElement['parameters'] ?? []) {
             const param = new UMLParameter();
-            param.name = paramElement["name"] ?? undefined;
-            param.type = paramElement["type"] ?? undefined;
+            param.name = paramElement["name"] ?? null;
+            param.type = paramElement["type"] ?? null;
 
             meth.parameters.push(param);
           }
@@ -513,26 +732,48 @@ const App: Component = () => {
           cls);
       }
 
+      for (var element of jsonArray.derives) {
+        let parent = store.classes.find(x => x.uuid === element.parent.uuid);
+        let children = store.classes.find(x => x.uuid === element.children.uuid);
+
+        setStore(
+          "derives",
+          store.derives.length,
+          parent.property?.toLowerCase() === "interface" 
+            ? new UMLInterfaceDerive(parent, children)
+            : new UMLClassDerive(parent, children));
+      }
+      
       updateView();
     });
 
     fileLoader.click();
     fileLoader.remove();
+    
   }
+  /*
+   * Head-Nav
+   */
 
-  setLocationContextMenu({ x: 100, y: 100 });
-  onContextMenuAddClass();
-  setLocationContextMenu({ x: 500, y: 500 });
-  onContextMenuAddClass();
+  /*
+   * Debug
+   */
+  // setLocationContextMenu({ x: 100, y: 100 });
+  // onContextMenuAddClass();
+  // setLocationContextMenu({ x: 500, y: 500 });
+  // onContextMenuAddClass();
 
-  setStore(
-    "connections",
-    store.connections.length,
-    {
-      src: store.classes[0],
-      dst: store.classes[1]
-    });
+  // setStore(
+  //   "connections",
+  //   store.connections.length,
+  //   {
+  //     src: store.classes[0],
+  //     dst: store.classes[1]
+  //   });
 
+  /*
+   * App
+   */
   return (
     <div
       onClick={e => {
@@ -549,7 +790,7 @@ const App: Component = () => {
           onclick={onContextMenuAddClass} />
         <NavItem title="Delete Class"
           classExt={"hover:bg-red-500"}
-          hidden={currentClass() === undefined}
+          hidden={currentClass() === null}
           onclick={onContextMenuRemoveClass} />
         <NavItem title="Save image"
           classExt={"hover:bg-gradient-to-r hover:from-cyan-500 hover:to-blue-500"}
@@ -569,6 +810,11 @@ const App: Component = () => {
         onmousemove={onCanvasMouseMove}
         onmouseup={onCanvasMouseUp}
         onContextMenu={onCanvasContextMenu} />
+      <div class="absolute fixed flex flex-row">
+        <Button title='Share' onclick={() => {}} />
+        <Field title='Adrress' onInputChange={(e) => setStore("rtc", {target: e.currentTarget.value})} />
+        <Button title='Connect' onclick={() => {}} />
+      </div>
       <Show when={currentClass()}>
         <div id="side-nav" class="fixed flex max-h-screen top-0 right-0 p-4 min-w-[351px]">
           <div class="flex grow flex-col">
@@ -597,6 +843,12 @@ const App: Component = () => {
                     : "border border-gray-400 bg-white border-b-sky-400 hover:border-sky-400 text-gray-400 hover:text-gray-700"}`}
                   onclick={() => setContextIndex(1)}
                 >Methodes</button>
+                <button class={`py-1 w-full text-sm font-medium text-gray-700 rounded-t
+                  ${contentIndex() == 2
+                    ? "bg-white border-sky-400 border-x border-t"
+                    : "border border-gray-400 bg-white border-b-sky-400 hover:border-sky-400 text-gray-400 hover:text-gray-700"}`}
+                  onclick={() => setContextIndex(2)}
+                >Derivces</button>
                 {/* <Button title="" onclick={() => setContextIndex(1)} /> */}
               </div>
             </div>
@@ -638,9 +890,29 @@ const App: Component = () => {
                               update={updateView}
                             />}
                           </For>
-
                         </UMLMethodeContainer>)
                       }}
+                    </For>
+                  </div>
+                </div>
+              </Match>
+              <Match when={contentIndex() === 2}>
+                <div id="meth-container" class="flex flex-col overflow-hidden max-h-max bg-white rounded-b border-x border-b border-sky-400 p-2 shadow">
+                  <div class="overflow-y-auto h-full">
+                    <For each={store.classes}>
+                      {(umlClass, iUmlClass) => {
+                        if(umlClass.uuid === currentClass().uuid)
+                          return;
+                        return (
+                          <div 
+                            class="relative flex flex-row bg-white rounded border border-sky-400 p-2 mb-2 shadow">
+                            <CheckBoxSlim 
+                              id={`static-derive-${umlClass.name}`} 
+                              value={store.derives.findIndex(x => x.children.uuid === currentClass().uuid && x.parent.uuid === umlClass.uuid) !== -1} 
+                              title={umlClass.name} 
+                              onChanges={(e) => {e.currentTarget.checked ? pushDerive(iUmlClass()) : deleteDerive(iUmlClass()) }} />
+                          </div>
+                      )}}
                     </For>
                   </div>
                 </div>
