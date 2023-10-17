@@ -810,11 +810,12 @@ const App: Component = () => {
         onmousemove={onCanvasMouseMove}
         onmouseup={onCanvasMouseUp}
         onContextMenu={onCanvasContextMenu} />
-      <div class="absolute fixed flex flex-row">
+      {/* WRTC */}
+      {/* <div class="absolute fixed flex flex-row">
         <Button title='Share' onclick={() => {}} />
         <Field title='Adrress' onInputChange={(e) => setStore("rtc", {target: e.currentTarget.value})} />
         <Button title='Connect' onclick={() => {}} />
-      </div>
+      </div> */}
       <Show when={currentClass()}>
         <div id="side-nav" class="fixed flex max-h-screen top-0 right-0 p-4 min-w-[351px]">
           <div class="flex grow flex-col">
