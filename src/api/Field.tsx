@@ -3,7 +3,7 @@ import { JSX } from "solid-js/jsx-runtime";
 
 export const Field : Component<{
     title:string, 
-    initValue:string; 
+    initValue?:string; 
     onInputChange: JSX.EventHandlerUnion<HTMLInputElement, InputEvent>}> 
     = (props) => 
 { 
