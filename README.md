@@ -37,7 +37,10 @@ You can deploy the `dist` folder to any static host provider (netlify, surge, no
 ## Tasks 
 - [ ] Web RTC
 - [ ] Derive line/arrow improvment
+  - [ ] Slim Derive save (only uuid)
   - [ ] Config
   - [ ] Arrow rotation
   - [ ] etc.
 - [ ] Derives searchbar
+- [ ] Group Selection
+- [ ] Group Moving

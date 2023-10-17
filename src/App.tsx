@@ -7,7 +7,7 @@ import { drawTextHCenter, measureText, drawRectangle, drawTextHLeft, Point, Sing
 import { Field } from './api/Field';
 import { Label } from './api/Label';
 import { UMLAttribute, UMLAttributeContainer } from './api/UMLAttribute';
-import { UMLClass } from './api/UMLClass';
+import { UMLClass, UMLEnum, UMLInterface } from './api/UMLClass';
 import { UMLMethode, UMLMethodeContainer } from './api/UMLMethode';
 import { UMLParameter, UMLParameterContainer } from './api/UMLParameter';
 import { IUMLDerive, UMLClassDerive, UMLInterfaceDerive } from './api/UMLDerive';
@@ -104,7 +104,9 @@ const App: Component = () => {
     if (changingsObserved) {
       ctx.imageSmoothingQuality = 'high';
       ctx.imageSmoothingEnabled = true;
-      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      
+      ctx.fillStyle = "white";
+      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
       const gridSize = store.grid.space * store.zoom;
       const subGridSize = gridSize / (1 + store.grid.subCount);
@@ -627,6 +629,41 @@ const App: Component = () => {
       }));
     updateView();
   }
+
+  function onContextMenuAddInterface() {
+    const zoomFacktor = 1 / store.zoom;
+    let { x, y } = locationContextMenu();
+    x = (x - store.viewOffset.x) * zoomFacktor;
+    y = (y - store.viewOffset.y) * zoomFacktor;
+
+    const gridSnap = (store.grid.space * store.zoom) / (1 + store.grid.subCount);
+    setStore(
+      "classes",
+      store.classes.length,
+      UMLInterface.Create({
+        x: x - (x % gridSnap),
+        y: y - (y % gridSnap)
+      }));
+    updateView();
+  }
+
+  function onContextMenuAddEnum() {
+    const zoomFacktor = 1 / store.zoom;
+    let { x, y } = locationContextMenu();
+    x = (x - store.viewOffset.x) * zoomFacktor;
+    y = (y - store.viewOffset.y) * zoomFacktor;
+
+    const gridSnap = (store.grid.space * store.zoom) / (1 + store.grid.subCount);
+    setStore(
+      "classes",
+      store.classes.length,
+      UMLEnum.Create({
+        x: x - (x % gridSnap),
+        y: y - (y % gridSnap)
+      }));
+    updateView();
+  }
+
   function onContextMenuRemoveClass() {
     // remove class from store
     setStore(
@@ -687,6 +724,7 @@ const App: Component = () => {
           x: element["x"] ?? 0,
           y: element["y"] ?? 0
         });
+        cls.property = element["property"];
         cls.uuid = element["uuid"];
         cls.name = element["name"],
         cls.width = element["width"];
@@ -788,6 +826,12 @@ const App: Component = () => {
         <NavItem title={"Add Class"}
           classExt={"hover:bg-gradient-to-r hover:from-cyan-500 hover:to-blue-500"}
           onclick={onContextMenuAddClass} />
+        <NavItem title={"Add Interface"}
+          classExt={"hover:bg-gradient-to-r hover:from-cyan-500 hover:to-blue-500"}
+          onclick={onContextMenuAddInterface} />
+        <NavItem title={"Add Enum"}
+          classExt={"hover:bg-gradient-to-r hover:from-cyan-500 hover:to-blue-500"}
+          onclick={onContextMenuAddEnum} />
         <NavItem title="Delete Class"
           classExt={"hover:bg-red-500"}
           hidden={currentClass() === null}
