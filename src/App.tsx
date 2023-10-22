@@ -83,6 +83,7 @@ const App: Component = () => {
 
   let frameNumber: number;
   let canvas: HTMLCanvasElement;
+  let ctx: CanvasRenderingContext2D;
 
   onMount(() => {
     window.addEventListener("resize", e => {
@@ -93,9 +94,9 @@ const App: Component = () => {
 
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    const ctx = canvas.getContext("2d");
+    ctx = canvas.getContext("2d");
     requestAnimationFrame(() => render(ctx));
-  })
+  });
 
   function updateView() {
     changingsObserved = true;
@@ -104,7 +105,7 @@ const App: Component = () => {
     if (changingsObserved) {
       ctx.imageSmoothingQuality = 'high';
       ctx.imageSmoothingEnabled = true;
-      
+
       ctx.fillStyle = "white";
       ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
@@ -449,7 +450,7 @@ const App: Component = () => {
    */
   function pushDerive(parentIndex: number) {
     let parent: UMLClass = store.classes[parentIndex];
-    if(parent?.property?.toLowerCase() === "interface"){ 
+    if(parent?.property?.trim().toLowerCase() === "interface"){ 
       setStore(
         "derives",
         store.derives.length,
@@ -678,12 +679,60 @@ const App: Component = () => {
     updateView();
   }
   function onContextMenuSaveImage() {
+    const curWidth = canvas.width;
+    const curHeight = canvas.width;
+    const curOffset = store.viewOffset;
+
+    let startX = Number.MAX_VALUE;
+    let endX = Number.MIN_VALUE;
+
+    let startY = Number.MAX_VALUE;
+    let endY = Number.MIN_VALUE;
+
+    for(let element of store.classes)
+    {
+      if(element.x < startX) { 
+        startX = element.x;
+      }
+      
+      if((element.x + element.width) > endX) {
+        endX = (element.x + element.width);
+      }  
+
+      if(element.y < startY) { 
+        startY = element.y;
+      } 
+      
+      if((element.y + element.height) > endY) {
+        endY = element.y + element.height;
+      }  
+    }
+
+    let h = endX - startX;
+    let w = endY - startY;
+
+    setStore(
+      "viewOffset",
+      {
+        x: startX, 
+        y: startY
+      });
+
+    canvas.width = w;
+    canvas.height = h;
+
+    updateView();
+
     const link = document.createElement("a");
     link.download = 'download.png';
     link.href = canvas.toDataURL();
     link.click();
     link.remove();
+
+    //canvas.width = curWidth;
+    //canvas.height = curHeight;
   }
+
   function onContextMenuSaveState() {
     const link = document.createElement("a");
     var file = new Blob(
@@ -717,7 +766,6 @@ const App: Component = () => {
 
       setStore("classes", []);
       setStore("derives", []);
-
 
       for (var element of jsonArray.classes) {
         const cls = new UMLClass({
@@ -893,7 +941,7 @@ const App: Component = () => {
                     ? "bg-white border-sky-400 border-x border-t"
                     : "border border-gray-400 bg-white border-b-sky-400 hover:border-sky-400 text-gray-400 hover:text-gray-700"}`}
                   onclick={() => setContextIndex(2)}
-                >Derivces</button>
+                >Derives</button>
                 {/* <Button title="" onclick={() => setContextIndex(1)} /> */}
               </div>
             </div>
@@ -952,7 +1000,7 @@ const App: Component = () => {
                           <div 
                             class="relative flex flex-row bg-white rounded border border-sky-400 p-2 mb-2 shadow">
                             <CheckBoxSlim 
-                              id={`static-derive-${umlClass.name}`} 
+                              id={`static-derive-${umlClass.name}_${iUmlClass()}`} 
                               value={store.derives.findIndex(x => x.children.uuid === currentClass().uuid && x.parent.uuid === umlClass.uuid) !== -1} 
                               title={umlClass.name} 
                               onChanges={(e) => {e.currentTarget.checked ? pushDerive(iUmlClass()) : deleteDerive(iUmlClass()) }} />

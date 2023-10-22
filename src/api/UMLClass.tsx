@@ -28,7 +28,7 @@ export class UMLClass implements IUMLClass {
   attributes: UMLAttribute[];
   methodes: UMLMethode[];
 
-  constructor(position: Point) { 
+  constructor(position: Point) {
     this.uuid = crypto.randomUUID();
     this.x = position.x;
     this.y = position.y;
@@ -50,5 +50,22 @@ export class UMLClass implements IUMLClass {
     }
 
     return sb.toString();
+  }
+}
+
+
+export class UMLInterface { 
+  public static Create(position: Point) : UMLClass {
+    let cls : UMLClass = new UMLClass(position);  
+    cls.property = "interface";
+    return cls;
+  }
+}
+
+export class UMLEnum { 
+  public static Create(position: Point) : UMLClass {
+    let cls : UMLClass = new UMLClass(position);  
+    cls.property = "enumerable";
+    return cls;
   }
 }

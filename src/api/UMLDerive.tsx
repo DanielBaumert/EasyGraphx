@@ -26,3 +26,4 @@ export class UMLInterfaceDerive implements IUMLDerive {
         this.children = children;
     }    
 }
+
