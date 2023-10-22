@@ -1,5 +1,4 @@
 import { Component, createSignal, For, Match, onMount, Show, Switch } from 'solid-js';
-import { createStore } from "solid-js/store";
 import { Button } from './api/Button';
 import { CheckBox, CheckBoxSlim } from './api/CheckBox';
 import { ContextMenu, NavItem } from './api/ContextMenu';
@@ -7,55 +6,13 @@ import { drawTextHCenter, measureText, drawRectangle, drawTextHLeft, Point, Sing
 import { Field } from './api/Field';
 import { Label } from './api/Label';
 import { UMLAttribute, UMLAttributeContainer } from './api/UMLAttribute';
-import { UMLClass, UMLEnum, UMLInterface } from './api/UMLClass';
+import { dropAttribute, dropMethode, popAttribute, popMethode, popParameter, pushAttribute, pushMethode, pushParameter, UMLClass, UMLContextMenu, UMLEnum, UMLInterface } from './api/UMLClass';
 import { UMLMethode, UMLMethodeContainer } from './api/UMLMethode';
 import { UMLParameter, UMLParameterContainer } from './api/UMLParameter';
 import { IUMLDerive, UMLClassDerive, UMLInterfaceDerive } from './api/UMLDerive';
-
-const [store, setStore] = createStore<
-  {
-    classes: UMLClass[],
-    grid: {
-      space: number,
-      color: string | CanvasGradient | CanvasPattern,
-      subVisuale: boolean,
-      subColor: string | CanvasGradient | CanvasPattern,
-      subCount: number,
-    },
-    derives: IUMLDerive[],
-    selectedClassOffset: Point,
-    hoverClass?: UMLClass,
-    hoverBorder: boolean,
-    mouseDown: Point,
-    mouse: Point,
-    readyToMove: boolean,
-    viewOffset: Point,
-    zoom: number,
-    rtc : {
-      target: string
-    }
-  }>({
-    classes: [],
-    derives: [],
-    grid: {
-      color: "#00505033",
-      space: 64,
-      subVisuale: true,
-      subColor: "#00505011",
-      subCount: 3,
-    },
-    selectedClassOffset: {x: 0, y: 0},
-    hoverClass: null,
-    hoverBorder: false,
-    mouseDown: { x: 0, y: 0 },
-    mouse: { x: 0, y: 0 },
-    readyToMove: false,
-    viewOffset: { x: 0, y: 0 },
-    zoom: 1.0,
-    rtc : {
-      target: ""
-    }
-  });
+import { setStore, store } from './api/Store';
+import { changingsObserved, endUpdateView, getUpdateViewState, startUpdateView } from './api/GlobalState';
+import { currentClass, setCurrentClass, setLocationContextMenu, setContextMenuOpen, locationContextMenu, isContextMenuOpen, contentIndex, setContextIndex } from './api/Signals';
 
 // var exampleClass = new UMLClass();
 // exampleClass.isAbstract = true;
@@ -71,16 +28,8 @@ const [store, setStore] = createStore<
 // exampleClass.methodes.push(exampleMethode);
 
 
-
-
-var changingsObserved: boolean = true;
-
 const App: Component = () => {
-  const [isContextMenuOpen, setContextMenuOpen] = createSignal<boolean>(false);
-  const [currentClass, setCurrentClass] = createSignal<UMLClass>(null, { equals: false });
-  const [contentIndex, setContextIndex] = createSignal<number>(0);
-  const [locationContextMenu, setLocationContextMenu] = createSignal<Point>(null);
-
+  
   let frameNumber: number;
   let canvas: HTMLCanvasElement;
   let ctx: CanvasRenderingContext2D;
@@ -89,7 +38,7 @@ const App: Component = () => {
     window.addEventListener("resize", e => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
-      changingsObserved = true;
+      startUpdateView();
     });
 
     canvas.width = window.innerWidth;
@@ -98,9 +47,8 @@ const App: Component = () => {
     requestAnimationFrame(() => render(ctx));
   });
 
-  function updateView() {
-    changingsObserved = true;
-  }
+ 
+
   function render(ctx: CanvasRenderingContext2D) {
     if (changingsObserved) {
       ctx.imageSmoothingQuality = 'high';
@@ -369,84 +317,15 @@ const App: Component = () => {
       }
 
 
-      changingsObserved = false;
+      endUpdateView();
     }
 
     frameNumber = requestAnimationFrame(() => render(ctx));
   }
 
+  
   /*
-   * Attribute management 
-   */
-  function pushAttribute() {
-    currentClass().attributes.push(new UMLAttribute());
-    setCurrentClass(currentClass());
-    updateView();
-  }
-  function popAttribute(attrIndex: number) {
-    currentClass().attributes.splice(attrIndex, 1);
-    setCurrentClass(currentClass());
-    updateView();
-  }
-  function dropAttribute(i: number, e: DragEvent) {
-    const src = Number.parseInt(e.dataTransfer.getData("number"));
-    currentClass().attributes.splice(
-      i,
-      0,
-      ...currentClass().attributes.splice(src, 1));
-
-    setCurrentClass(currentClass());
-    updateView();
-  }
-  /*
-   * Methode management
-   */
-  function pushMethode() {
-    currentClass().methodes.push(new UMLMethode());
-    setCurrentClass(currentClass());
-    updateView();
-  }
-  function popMethode(methIndex: number) {
-    currentClass().methodes.splice(methIndex, 1);
-    setCurrentClass(currentClass());
-    updateView();
-  }
-  function dropMethode(i: number, e: DragEvent) {
-    const src = Number.parseInt(e.dataTransfer.getData("number"));
-    currentClass().methodes.splice(
-      i,
-      0,
-      ...currentClass().methodes.splice(src, 1));
-
-    setCurrentClass(currentClass());
-    updateView();
-  }
-  /*
-   * End - Methode management
-   */
-  function pushParameter(methodeIndex: number) {
-    currentClass().methodes[methodeIndex].parameters.push(new UMLParameter())
-    setCurrentClass(currentClass());
-    updateView();
-  }
-  function popParameter(methIndex: number, parameterIndex: number) {
-    currentClass().methodes[methIndex].parameters.splice(parameterIndex, 1);
-    setCurrentClass(currentClass());
-    updateView();
-  }
-  function dropParameter(methIndex: number, parameterIndex: number, e: DragEvent) {
-    const src = Number.parseInt(e.dataTransfer.getData("number"));
-    currentClass().methodes[methIndex].parameters.splice(
-      parameterIndex,
-      0,
-      ...currentClass().methodes[methIndex].parameters.splice(src, 1));
-
-    setCurrentClass(currentClass());
-    updateView();
-  }
-
-  /*
-   * derives
+   * Derives management
    */
   function pushDerive(parentIndex: number) {
     let parent: UMLClass = store.classes[parentIndex];
@@ -462,7 +341,7 @@ const App: Component = () => {
         new UMLClassDerive(parent, currentClass()));
     }
     setCurrentClass(currentClass());
-    updateView();
+    startUpdateView();
   }
 
   function deleteDerive(parentIndex: number) {
@@ -472,9 +351,11 @@ const App: Component = () => {
       store.derives.filter(x => 
         x.parent.uuid !== parent.uuid 
         || x.children.uuid !== currentClass().uuid));
-    updateView();
+    startUpdateView();
   }
-
+ /*
+   * End - Derives management
+   */
   /*
    * UI related methodes
    */
@@ -484,10 +365,11 @@ const App: Component = () => {
       return readyToMove;
     });
   }
+
   function updateIsStatic(e: Event) {
     if (e.currentTarget instanceof HTMLInputElement) {
       currentClass().isAbstract = e.currentTarget.checked;
-      updateView();
+      startUpdateView();
     }
   }
   function findClassAt(position: Point): UMLClass {
@@ -544,14 +426,14 @@ const App: Component = () => {
     if (newHoverClass === null && store.hoverClass !== null) {
       setStore("hoverClass", newHoverClass);
       canvas.style["cursor"] = "default"
-      updateView();
+      startUpdateView();
     } else if (newHoverClass !== null) {
       // a class below the mouse is found
       if (store.hoverClass?.uuid !== newHoverClass.uuid) {
         // is the curret newHoverClass not the same below the mouse
         setStore("hoverClass", newHoverClass);
         //canvas.style["cursor"] = "move";
-        updateView();
+        startUpdateView();
       } else {
         const mouseViewX = e.x - store.viewOffset.x;
         const mouseViewY = e.y - store.viewOffset.y;
@@ -565,11 +447,11 @@ const App: Component = () => {
             || bottomBorder - 5 <= mouseViewY && mouseViewY <= bottomBorder + 5)) {
           // if the mouse near the border and the hoverBorder is not set => set border hover
           setStore("hoverBorder", true);
-          updateView();
+          startUpdateView();
         } else if (store.hoverBorder) {
           // if hoverBorder set but the mouse not close to the border => deselect border hover
           setStore("hoverBorder", false);
-          updateView();
+          startUpdateView();
         }
       }
     }
@@ -587,7 +469,7 @@ const App: Component = () => {
         currentClass().y = Math.floor((deltaY) / gridSnap) * gridSnap;
 
         setCurrentClass(currentClass());
-        updateView();
+        startUpdateView();
       } else {
         // if the primary button goes down on a class
         setStore(
@@ -596,7 +478,7 @@ const App: Component = () => {
             x: store.viewOffset.x + (e.x - store.mouse.x),
             y: store.viewOffset.y + (e.y - store.mouse.y)
           });
-        updateView();
+        startUpdateView();
       }
     }
     setStore("mouse", e);
@@ -630,7 +512,7 @@ const App: Component = () => {
         x: x - (x % gridSnap),
         y: y - (y % gridSnap)
       }));
-    updateView();
+    startUpdateView();
   }
 
   function onContextMenuAddInterface() {
@@ -647,7 +529,7 @@ const App: Component = () => {
         x: x - (x % gridSnap),
         y: y - (y % gridSnap)
       }));
-    updateView();
+    startUpdateView();
   }
 
   function onContextMenuAddEnum() {
@@ -664,7 +546,7 @@ const App: Component = () => {
         x: x - (x % gridSnap),
         y: y - (y % gridSnap)
       }));
-    updateView();
+    startUpdateView();
   }
 
   function onContextMenuRemoveClass() {
@@ -678,12 +560,15 @@ const App: Component = () => {
       "derives",
       store.derives.filter(x => x.parent.uuid !== currentClass().uuid))
       
-    updateView();
+    startUpdateView();
   }
   function onContextMenuSaveImage() {
-    const curWidth = canvas.width;
-    const curHeight = canvas.width;
-    const curOffset = store.viewOffset;
+    const {
+      width: curWidth,
+      height: curHeight
+    } = canvas;
+    
+    const {x: curX, y: curY} = store.viewOffset;
 
     let startX = Number.MAX_VALUE;
     let endX = Number.MIN_VALUE;
@@ -697,42 +582,51 @@ const App: Component = () => {
         startX = element.x;
       }
       
-      if((element.x + element.width) > endX) {
-        endX = (element.x + element.width);
-      }  
-
       if(element.y < startY) { 
         startY = element.y;
       } 
+
+      if((element.x + element.width) > endX) {
+        endX = (element.x + element.width);
+      }  
       
       if((element.y + element.height) > endY) {
-        endY = element.y + element.height;
+        endY = (element.y + element.height);
       }  
     }
 
-    let h = endX - startX;
-    let w = endY - startY;
+    let h = (endY - startY) + 1 /*class pixel */ + (2 * 8 /* padding*/);
+    let w = (endX - startX) + 1 /*class pixel */ + (2 * 8 /* padding*/);
 
     setStore(
       "viewOffset",
       {
-        x: startX, 
-        y: startY
+        x: -(startX - 8), 
+        y: -(startY - 8)
       });
 
     canvas.width = w;
     canvas.height = h;
 
-    updateView();
+    startUpdateView(() => { 
+      const link = document.createElement("a");
+      link.download = 'download.png';
+      link.href = canvas.toDataURL();
+      link.click();
+      link.remove();
 
-    const link = document.createElement("a");
-    link.download = 'download.png';
-    link.href = canvas.toDataURL();
-    link.click();
-    link.remove();
-
-    //canvas.width = curWidth;
-    //canvas.height = curHeight;
+      canvas.width = curWidth;
+      canvas.height = curHeight;
+      
+      setStore(
+        "viewOffset",
+        {
+          x: curX,
+          y: curY
+        });
+      
+      startUpdateView();
+    });
   }
 
   function onContextMenuSaveState() {
@@ -747,6 +641,7 @@ const App: Component = () => {
     link.click();
     link.remove();
   }
+  
   function onContextMenuLoadState() {
     const fileLoader = document.createElement("input");
     fileLoader["type"] = "file";
@@ -832,7 +727,7 @@ const App: Component = () => {
             : new UMLClassDerive(parent, children));
       }
       
-      updateView();
+      startUpdateView();
     });
 
     fileLoader.click();
@@ -917,39 +812,39 @@ const App: Component = () => {
               <Label title="Class" />
               <Field title='Property'
                 initValue={currentClass().property}
-                onInputChange={e => { currentClass().property = e.currentTarget.value; updateView() }} />
+                onInputChange={e => { currentClass().property = e.currentTarget.value; startUpdateView() }} />
               <Field title='Name'
                 initValue={currentClass().name}
-                onInputChange={e => { currentClass().name = e.currentTarget.value; updateView() }} />
+                onInputChange={e => { currentClass().name = e.currentTarget.value; startUpdateView() }} />
               <CheckBox id="static" title="Abstract" value={currentClass().isAbstract} onChanges={updateIsStatic} />
             </div>
             {/* Tabs */}
             <div>
               <div class='flex flex-row justify-between'>
                 <button class={`py-1 w-full text-sm font-medium text-gray-700 rounded-t
-                  ${contentIndex() == 0
+                  ${contentIndex() === UMLContextMenu.Attributes
                     ? "bg-white border-sky-400 border-x border-t"
                     : "border border-gray-400 bg-white border-b-sky-400 hover:border-sky-400 text-gray-400 hover:text-gray-700"}`}
-                  onclick={() => setContextIndex(0)}
+                  onclick={() => setContextIndex(UMLContextMenu.Attributes)}
                 >Attributes</button>
                 <button class={`py-1 w-full text-sm font-medium text-gray-700 rounded-t
-                  ${contentIndex() == 1
+                  ${contentIndex() === UMLContextMenu.Methodes
                     ? "bg-white border-sky-400 border-x border-t"
                     : "border border-gray-400 bg-white border-b-sky-400 hover:border-sky-400 text-gray-400 hover:text-gray-700"}`}
-                  onclick={() => setContextIndex(1)}
+                  onclick={() => setContextIndex(UMLContextMenu.Methodes)}
                 >Methodes</button>
                 <button class={`py-1 w-full text-sm font-medium text-gray-700 rounded-t
-                  ${contentIndex() == 2
+                  ${contentIndex() === UMLContextMenu.Derives
                     ? "bg-white border-sky-400 border-x border-t"
                     : "border border-gray-400 bg-white border-b-sky-400 hover:border-sky-400 text-gray-400 hover:text-gray-700"}`}
-                  onclick={() => setContextIndex(2)}
+                  onclick={() => setContextIndex(UMLContextMenu.Derives)}
                 >Derives</button>
                 {/* <Button title="" onclick={() => setContextIndex(1)} /> */}
               </div>
             </div>
             {/* Tabs content */}
             <Switch>
-              <Match when={contentIndex() === 0} >
+              <Match when={contentIndex() === UMLContextMenu.Attributes} >
                 <div id="attr-container" class="flex flex-col overflow-hidden max-h-max bg-white rounded-b border-x border-b border-sky-400 p-2 shadow">
                   <Button title='Add attribute' onclick={pushAttribute} />
                   <div class="overflow-y-auto h-full">
@@ -958,13 +853,13 @@ const App: Component = () => {
                         index={i()}
                         attr={attr}
                         onDrop={e => dropAttribute(i(), e)}
-                        update={updateView}
+                        update={startUpdateView}
                         delete={() => popAttribute(i())} />}
                     </For>
                   </div>
                 </div>
               </Match>
-              <Match when={contentIndex() === 1} >
+              <Match when={contentIndex() === UMLContextMenu.Methodes} >
                 <div id="meth-container" class="flex flex-col overflow-hidden max-h-max bg-white rounded-b border-x border-b border-sky-400 p-2 shadow">
                   <Button title='Add methode' onclick={pushMethode} />
                   <div class="overflow-y-auto h-full">
@@ -974,7 +869,7 @@ const App: Component = () => {
                           index={iMethode()}
                           methode={methode}
                           onDrop={e => dropMethode(iMethode(), e)}
-                          update={updateView}
+                          update={startUpdateView}
                           delete={() => popMethode(iMethode())}
                           onPushParameter={() => pushParameter(iMethode())}>
 
@@ -982,7 +877,7 @@ const App: Component = () => {
                             {(param, iParam) => <UMLParameterContainer
                               param={param}
                               popParameter={() => popParameter(iMethode(), iParam())}
-                              update={updateView}
+                              update={startUpdateView}
                             />}
                           </For>
                         </UMLMethodeContainer>)
@@ -991,7 +886,7 @@ const App: Component = () => {
                   </div>
                 </div>
               </Match>
-              <Match when={contentIndex() === 2}>
+              <Match when={contentIndex() === UMLContextMenu.Derives} >
                 <div id="meth-container" class="flex flex-col overflow-hidden max-h-max bg-white rounded-b border-x border-b border-sky-400 p-2 shadow">
                   <div class="overflow-y-auto h-full">
                     <For each={store.classes}>
@@ -1016,6 +911,11 @@ const App: Component = () => {
           </div>
         </div>
       </Show>
+      <div class='z-20 absolute bottom-4 left-4 flex flex-col'>
+        <Label title={`x: ${store.viewOffset.x}`}/>
+        <Label title={`y: ${store.viewOffset.y}`}/>
+      </div>
+
     </div>
   );
 };
