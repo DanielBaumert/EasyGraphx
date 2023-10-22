@@ -469,7 +469,9 @@ const App: Component = () => {
     let parent: UMLClass = store.classes[parentIndex];
     setStore(
       "derives",
-      store.derives.filter(x => x.parent.uuid !== parent.uuid && x.children.uuid !== currentClass().uuid));
+      store.derives.filter(x => 
+        x.parent.uuid !== parent.uuid 
+        || x.children.uuid !== currentClass().uuid));
     updateView();
   }
 
