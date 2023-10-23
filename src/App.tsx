@@ -13,7 +13,8 @@ import { IUMLDerive, UMLClassDerive, UMLInterfaceDerive } from './api/UMLDerive'
 import { setStore, store } from './api/Store';
 import { changingsObserved, endUpdateView, getUpdateViewState, startUpdateView } from './api/GlobalState';
 import { currentClass, setCurrentClass, setLocationContextMenu, setContextMenuOpen, locationContextMenu, isContextMenuOpen, contentIndex, setContextIndex } from './api/Signals';
-
+import { MouseButtons, onCanvasMouseDown, onCanvasMouseMove, onCanvasMouseUp } from './api/Mouse';
+import { canvas, Canvas } from './api/Canvas';
 // var exampleClass = new UMLClass();
 // exampleClass.isAbstract = true;
 // exampleClass.attributes.push(new UMLAttribute());
@@ -31,7 +32,6 @@ import { currentClass, setCurrentClass, setLocationContextMenu, setContextMenuOp
 const App: Component = () => {
   
   let frameNumber: number;
-  let canvas: HTMLCanvasElement;
   let ctx: CanvasRenderingContext2D;
 
   onMount(() => {
@@ -41,20 +41,25 @@ const App: Component = () => {
       startUpdateView();
     });
 
+    window.addEventListener("click", () => {
+      // close the context menu by any click in the view
+      if(isContextMenuOpen()){
+        setContextMenuOpen(false);
+      }
+    });
+
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     ctx = canvas.getContext("2d");
     requestAnimationFrame(() => render(ctx));
   });
 
- 
-
   function render(ctx: CanvasRenderingContext2D) {
     if (changingsObserved) {
       ctx.imageSmoothingQuality = 'high';
       ctx.imageSmoothingEnabled = true;
 
-      ctx.fillStyle = "white";
+      ctx.fillStyle = store.grid.background;
       ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
       const gridSize = store.grid.space * store.zoom;
@@ -98,9 +103,7 @@ const App: Component = () => {
       }
       // Draw classes
       {
-        ctx.strokeStyle = "black";
-        ctx.fillStyle = "white";
-        ctx.font = `${16 * store.zoom}px Arial`;
+        ctx.font = `${store.fontSize * store.zoom}px Arial`;
         const xPadding = 16 * store.zoom;
 
         for (var umlClass of store.classes) {
@@ -136,39 +139,59 @@ const App: Component = () => {
           const xClassOffset = store.viewOffset.x + (umlClass.x * store.zoom);
           const yClassOffset = store.viewOffset.y + (umlClass.y * store.zoom);
 
-          let borderColor : string = umlClass.uuid === currentClass()?.uuid 
-            ? "green"
-            : "black";
+          var maxBoxHeight = maxHeaderBoxSize + maxAttrBoxHeight + 4 + maxMethBoxHeight + 2;
+
+          if(umlClass.uuid === currentClass()?.uuid) {
+
+            let borderColor = store.class.selectColor;
+            ctx.shadowColor = borderColor as string;
+            ctx.shadowBlur = 7;
+            
+            drawRectangle(ctx, xClassOffset, yClassOffset, maxBoxWidth, maxBoxHeight, borderColor, store.class.background);
+            
+            ctx.shadowBlur = 0;
+          } else {
+            
+            let borderColor = store.class.deselectColor;
+            drawRectangle(ctx, xClassOffset, yClassOffset, maxBoxWidth, maxBoxHeight, borderColor, store.class.background);
           
+          }
+            
+
           // draw heder 
-          drawRectangle(ctx, xClassOffset, yClassOffset, maxBoxWidth, maxHeaderBoxSize, borderColor, "white");
-          drawTextHCenter(ctx, xClassOffset, yClassOffset + (xPadding / 4), maxBoxWidth, xPadding, titleSize, "black");
+          //drawRectangle(ctx, xClassOffset, yClassOffset, maxBoxWidth, maxHeaderBoxSize, borderColor, store.class.background);
+          drawTextHCenter(ctx, xClassOffset, yClassOffset + (xPadding / 4), maxBoxWidth, xPadding, titleSize, store.class.fontColor);
 
           // draw attributes
           var yOffset = yClassOffset + maxHeaderBoxSize;
-          drawRectangle(ctx, xClassOffset, yOffset, maxBoxWidth, maxAttrBoxHeight, borderColor, "white");
+          drawLine(ctx, xClassOffset, yOffset, xClassOffset + maxBoxWidth, yOffset, "black");
+          yOffset += 2;
+          //drawRectangle(ctx, xClassOffset, yOffset, maxBoxWidth, maxAttrBoxHeight, borderColor, store.class.background);
           for (var attr of attrSizes) {
-            drawTextHLeft(ctx, xClassOffset, yOffset, xPadding, attr, "black");
+            drawTextHLeft(ctx, xClassOffset, yOffset, xPadding, attr, store.class.fontColor);
             yOffset += attr.height;
           }
 
           // draw methodes
           yOffset = yClassOffset + maxHeaderBoxSize + maxAttrBoxHeight;
-          drawRectangle(ctx, xClassOffset, yOffset, maxBoxWidth, maxMethBoxHeight, borderColor, "white");
+          yOffset += 2;
+          drawLine(ctx, xClassOffset, yOffset, xClassOffset + maxBoxWidth, yOffset, "black");
+          yOffset += 2;
+          //drawRectangle(ctx, xClassOffset, yOffset, maxBoxWidth, maxMethBoxHeight, borderColor, store.class.background);
           for (var meth of methSizes) {
-            drawTextHLeft(ctx, xClassOffset, yOffset, xPadding, meth, "black");
+            drawTextHLeft(ctx, xClassOffset, yOffset, xPadding, meth, store.class.fontColor);
             yOffset += meth.height;
           }
 
           // set new size
           umlClass.width = maxBoxWidth;
           umlClass.height = maxHeaderBoxSize + maxAttrBoxHeight + maxMethBoxHeight;
+          ctx.shadowBlur = 0;
         }
       }
 
       // Draw connections
       {
-
         for (const derive of store.derives) {
           // calc vector
           let lineMode = derive instanceof UMLInterfaceDerive
@@ -205,8 +228,6 @@ const App: Component = () => {
             fillTriangle(ctx, dstx, dsty, 16, 16, m, "black", "white");
           }
         }
-
-
       //   for (var connection of store.connections) {
       //     const direction = [
       //       Math.sign(connection.dst.x - connection.src.x), 
@@ -316,6 +337,14 @@ const App: Component = () => {
         // }
       }
 
+      // draw multi selection area
+      {
+        if(store.selectionMode){ 
+          let dx = store.mouse.x - store.mouseSecondary.x;
+          let dy = store.mouse.y - store.mouseSecondary.y;
+          drawRectangle(ctx, store.mouseSecondary.x, store.mouseSecondary.y, dx, dy, "blue", "rgba(0,0,255,0.3)");
+        }
+      }
 
       endUpdateView();
     }
@@ -359,142 +388,16 @@ const App: Component = () => {
   /*
    * UI related methodes
    */
-  function updateReadyToMove(state: boolean) {
-    setStore("readyToMove", (readyToMove) => {
-      readyToMove = state;
-      return readyToMove;
-    });
-  }
-
+ 
   function updateIsStatic(e: Event) {
     if (e.currentTarget instanceof HTMLInputElement) {
       currentClass().isAbstract = e.currentTarget.checked;
       startUpdateView();
     }
   }
-  function findClassAt(position: Point): UMLClass {
-    for (var i = store.classes.length - 1; i >= 0; i--) {
-      const umlClass = store.classes[i];
-      const mouseViewX = position.x - store.viewOffset.x;
-      const mouseViewY = position.y - store.viewOffset.y;
-
-      if ((umlClass.x * store.zoom) <= mouseViewX // left
-        && mouseViewX <= (umlClass.x * store.zoom) + umlClass.width // right
-        && (umlClass.y * store.zoom) <= mouseViewY // top
-        && mouseViewY <= (umlClass.y * store.zoom) + umlClass.height /* bottom */) {
-        return umlClass;
-      }
-    }
-
-    return null;
-  }
+  
   
 
-  /*
-   * Canvas
-   */
-  function onCanvasScroll(e: WheelEvent) {
-    // if (e.deltaY > 0) {
-    //   setStore("zoom", store.zoom * 0.9);
-    //   updateView();
-    // } else {
-    //   setStore("zoom", store.zoom * 1.1);
-    //   updateView();
-    // }
-  }
-
-  function onCanvasMouseDown(e: MouseEvent) {
-    setCurrentClass(null);
-    if (e.buttons === 1) {
-      setStore("mouse", e);
-      setStore("mouseDown", e);
-      var umlClass = findClassAt(e);
-      if (umlClass) {
-        updateReadyToMove(true);
-        setCurrentClass(umlClass);
-        setStore(
-          "selectedClassOffset", 
-          {
-            x: (e.x - umlClass.x), 
-            y: (e.y - umlClass.y)
-          });
-      }
-    }
-  }
-  function onCanvasMouseMove(e: MouseEvent) {
-    let newHoverClass = findClassAt(e);
-    if (newHoverClass === null && store.hoverClass !== null) {
-      setStore("hoverClass", newHoverClass);
-      canvas.style["cursor"] = "default"
-      startUpdateView();
-    } else if (newHoverClass !== null) {
-      // a class below the mouse is found
-      if (store.hoverClass?.uuid !== newHoverClass.uuid) {
-        // is the curret newHoverClass not the same below the mouse
-        setStore("hoverClass", newHoverClass);
-        //canvas.style["cursor"] = "move";
-        startUpdateView();
-      } else {
-        const mouseViewX = e.x - store.viewOffset.x;
-        const mouseViewY = e.y - store.viewOffset.y;
-        const rightBorder = store.hoverClass.x + store.hoverClass.width;
-        const bottomBorder = store.hoverClass.y + store.hoverClass.height;
-        if (
-          !store.hoverBorder &&
-          (store.hoverClass.x - 5 <= mouseViewX && mouseViewX <= store.hoverClass.x + 5 // left side hover
-            || store.hoverClass.y - 5 <= mouseViewY && mouseViewY + store.viewOffset.y <= store.hoverClass.y + 5 // top side hover
-            || rightBorder - 5 <= mouseViewX && mouseViewX <= rightBorder + 5 //
-            || bottomBorder - 5 <= mouseViewY && mouseViewY <= bottomBorder + 5)) {
-          // if the mouse near the border and the hoverBorder is not set => set border hover
-          setStore("hoverBorder", true);
-          startUpdateView();
-        } else if (store.hoverBorder) {
-          // if hoverBorder set but the mouse not close to the border => deselect border hover
-          setStore("hoverBorder", false);
-          startUpdateView();
-        }
-      }
-    }
-
-    if (e.buttons === 1) {
-      // primary mouse button is pressed
-      if (currentClass() && store.readyToMove) {
-        // If the primary button fell on a class while pressed
-        const gridSnap = (store.grid.space / (1 + store.grid.subCount)) * store.zoom;
-
-        const deltaX = (e.x - store.selectedClassOffset.x) * (1 / store.zoom);
-        const deltaY = (e.y - store.selectedClassOffset.y) * (1 / store.zoom);
-
-        currentClass().x = Math.floor((deltaX) / gridSnap) * gridSnap;
-        currentClass().y = Math.floor((deltaY) / gridSnap) * gridSnap;
-
-        setCurrentClass(currentClass());
-        startUpdateView();
-      } else {
-        // if the primary button goes down on a class
-        setStore(
-          "viewOffset",
-          {
-            x: store.viewOffset.x + (e.x - store.mouse.x),
-            y: store.viewOffset.y + (e.y - store.mouse.y)
-          });
-        startUpdateView();
-      }
-    }
-    setStore("mouse", e);
-  }
-  function onCanvasMouseUp(e: MouseEvent) {
-    if (currentClass() && e.buttons === 0 && store.readyToMove) {
-      updateReadyToMove(false);
-    }
-  }
-  function onCanvasContextMenu(e: MouseEvent) {
-    e.preventDefault();
-    var umlClass = findClassAt(e);
-    setCurrentClass(umlClass);
-    setLocationContextMenu(e);
-    setContextMenuOpen(true);
-  }
   /*
    * Context Menu
    */
@@ -562,6 +465,7 @@ const App: Component = () => {
       
     startUpdateView();
   }
+
   function onContextMenuSaveImage() {
     const {
       width: curWidth,
@@ -739,31 +643,10 @@ const App: Component = () => {
    */
 
   /*
-   * Debug
-   */
-  // setLocationContextMenu({ x: 100, y: 100 });
-  // onContextMenuAddClass();
-  // setLocationContextMenu({ x: 500, y: 500 });
-  // onContextMenuAddClass();
-
-  // setStore(
-  //   "connections",
-  //   store.connections.length,
-  //   {
-  //     src: store.classes[0],
-  //     dst: store.classes[1]
-  //   });
-
-  /*
    * App
    */
   return (
-    <div
-      onClick={e => {
-        if (isContextMenuOpen()) {
-          setContextMenuOpen(false);
-        }
-      }}
+    <div 
       class="relative min-h-screen max-h-screen">
       <ContextMenu
         hidden={!isContextMenuOpen()}
@@ -791,14 +674,10 @@ const App: Component = () => {
           classExt={"hover:bg-gradient-to-r hover:from-cyan-500 hover:to-blue-500"}
           onclick={onContextMenuLoadState} />
       </ContextMenu>
-      <canvas
-        ref={canvas} id="canny"
-        class='absolute bg-transparent'
-        onWheel={onCanvasScroll}
-        onmousedown={onCanvasMouseDown}
-        onmousemove={onCanvasMouseMove}
-        onmouseup={onCanvasMouseUp}
-        onContextMenu={onCanvasContextMenu} />
+      <Canvas
+        onMouseDown={onCanvasMouseDown}
+        onMouseMove={onCanvasMouseMove}
+        onMouseUp={onCanvasMouseUp} />
       {/* WRTC */}
       {/* <div class="absolute fixed flex flex-row">
         <Button title='Share' onclick={() => {}} />

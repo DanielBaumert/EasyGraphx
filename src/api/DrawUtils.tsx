@@ -33,6 +33,7 @@ export function drawTextHCenter(
     }
 }
 
+// draw text left alignt
 export function drawTextHLeft(
     ctx: CanvasRenderingContext2D, 
     xBox: number, yBox: number, 
@@ -40,7 +41,6 @@ export function drawTextHLeft(
     text: ITextBlock<string|SingleTextBlock[]>, 
     color: string|CanvasGradient|CanvasPattern): void
 {
-    ctx.strokeStyle = "black";
     ctx.fillStyle = color;
     if(text instanceof SingleTextBlock ) { 
         var xText = xBox + (xPadding / 2);
@@ -128,8 +128,9 @@ export function drawRectangle(
     strokeColor: string|CanvasGradient|CanvasPattern,
     fillColor: string|CanvasGradient|CanvasPattern) : void
 {
-    ctx.fillStyle = strokeColor;
+    ctx.strokeStyle = strokeColor;
     ctx.strokeRect(x, y, w, h);
+
     ctx.fillStyle = fillColor;
     ctx.fillRect(x, y, w, h);
 }
@@ -156,12 +157,13 @@ export function fillTriangle(
     let acos = Math.cos(a);
     
     let hCenter = h * .5;
-    //   /|
-    //  . |
-    //   \|
-
-    let p2 = rotate(0, 0, asin, acos);
+    //      p1
+    //      /|
+    // p2  . |
+    //      \|
+    //      p3
     let p1 = rotate(w, -hCenter, asin, acos);
+    let p2 = rotate(0, 0, asin, acos);
     let p3 = rotate(w, hCenter, asin, acos);
 
     ctx.beginPath();

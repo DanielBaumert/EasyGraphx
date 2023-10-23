@@ -7,20 +7,31 @@ export const [store, setStore] = createStore<
   {
     classes: UMLClass[],
     grid: {
+      background: string | CanvasGradient | CanvasPattern,
       space: number,
       color: string | CanvasGradient | CanvasPattern,
       subVisuale: boolean,
       subColor: string | CanvasGradient | CanvasPattern,
       subCount: number,
     },
+    class: {
+      background: string | CanvasGradient | CanvasPattern,
+      fontColor: string | CanvasGradient | CanvasPattern,
+      deselectColor:  string | CanvasGradient | CanvasPattern,
+      selectColor:  string | CanvasGradient | CanvasPattern,
+      borderWidth: number
+    },
+    mousePrimary: Point,
+    mouseSecondary: Point,
+    mouse: MouseEvent,
     derives: IUMLDerive[],
     selectedClassOffset: Point,
     hoverClass?: UMLClass,
     hoverBorder: boolean,
-    mouseDown: Point,
-    mouse: Point,
     readyToMove: boolean,
+    selectionMode: boolean,
     viewOffset: Point,
+    fontSize: number,
     zoom: number,
     rtc : {
       target: string
@@ -29,20 +40,31 @@ export const [store, setStore] = createStore<
     classes: [],
     derives: [],
     grid: {
+      background: "white",
       color: "#00505033",
       space: 64,
       subVisuale: true,
       subColor: "#00505011",
       subCount: 3,
     },
+    class: { 
+      background: "white",
+      fontColor: "black",
+      deselectColor: "black",
+      selectColor: "gray",
+      borderWidth: 2
+    },
     selectedClassOffset: {x: 0, y: 0},
     hoverClass: null,
     hoverBorder: false,
-    mouseDown: { x: 0, y: 0 },
-    mouse: { x: 0, y: 0 },
+    mousePrimary: { x: 0, y: 0 },
+    mouseSecondary: { x: 0, y: 0 },
+    mouse: null,
     readyToMove: false,
+    selectionMode: false,
     viewOffset: { x: 0, y: 0 },
     zoom: 1.0,
+    fontSize: 18,
     rtc : {
       target: ""
     }
