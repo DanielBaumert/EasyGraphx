@@ -1,6 +1,6 @@
 import { Point } from "./DrawUtils";
 import { startUpdateView } from "./GlobalState";
-import { currentClass, setCurrentClass } from "./Signals";
+import { selectedClass, setSelectedClass } from "./Signals";
 import { StringBuilder } from "./StringBuilder";
 import { UMLAttribute } from "./UMLAttribute";
 import { UMLMethode } from "./UMLMethode";
@@ -42,6 +42,7 @@ export class UMLClass implements IUMLClass {
     this.x = position.x;
     this.y = position.y;
     this.name = "class";
+    this.property = "";
     this.attributes = [];
     this.methodes = [];
   }
@@ -79,54 +80,50 @@ export class UMLEnum {
   }
 }
 
-
-
-
-
 /*
  * Attribute management 
  */
 export function pushAttribute() {
-  currentClass().attributes.push(new UMLAttribute());
-  setCurrentClass(currentClass());
+  selectedClass().attributes.push(new UMLAttribute());
+  setSelectedClass(selectedClass());
   startUpdateView();
 }
 export function popAttribute(attrIndex: number) {
-  currentClass().attributes.splice(attrIndex, 1);
-  setCurrentClass(currentClass());
+  selectedClass().attributes.splice(attrIndex, 1);
+  setSelectedClass(selectedClass());
   startUpdateView();
 }
 export function dropAttribute(i: number, e: DragEvent) {
   const src = Number.parseInt(e.dataTransfer.getData("number"));
-  currentClass().attributes.splice(
+  selectedClass().attributes.splice(
     i,
     0,
-    ...currentClass().attributes.splice(src, 1));
+    ...selectedClass().attributes.splice(src, 1));
 
-  setCurrentClass(currentClass());
+  setSelectedClass(selectedClass());
   startUpdateView();
 }
 /*
  * Methode management
  */
 export function pushMethode() {
-  currentClass().methodes.push(new UMLMethode());
-  setCurrentClass(currentClass());
+  selectedClass().methodes.push(new UMLMethode());
+  setSelectedClass(selectedClass());
   startUpdateView();
 }
 export function popMethode(methIndex: number) {
-  currentClass().methodes.splice(methIndex, 1);
-  setCurrentClass(currentClass());
+  selectedClass().methodes.splice(methIndex, 1);
+  setSelectedClass(selectedClass());
   startUpdateView();
 }
 export function dropMethode(i: number, e: DragEvent) {
   const src = Number.parseInt(e.dataTransfer.getData("number"));
-  currentClass().methodes.splice(
+  selectedClass().methodes.splice(
     i,
     0,
-    ...currentClass().methodes.splice(src, 1));
+    ...selectedClass().methodes.splice(src, 1));
 
-  setCurrentClass(currentClass());
+  setSelectedClass(selectedClass());
   startUpdateView();
 }
 /*
@@ -136,23 +133,23 @@ export function dropMethode(i: number, e: DragEvent) {
  * Parameter management
  */
 export function pushParameter(methodeIndex: number) {
-  currentClass().methodes[methodeIndex].parameters.push(new UMLParameter())
-  setCurrentClass(currentClass());
+  selectedClass().methodes[methodeIndex].parameters.push(new UMLParameter())
+  setSelectedClass(selectedClass());
   startUpdateView();
 }
 export function popParameter(methIndex: number, parameterIndex: number) {
-  currentClass().methodes[methIndex].parameters.splice(parameterIndex, 1);
-  setCurrentClass(currentClass());
+  selectedClass().methodes[methIndex].parameters.splice(parameterIndex, 1);
+  setSelectedClass(selectedClass());
   startUpdateView();
 }
 export function dropParameter(methIndex: number, parameterIndex: number, e: DragEvent) {
   const src = Number.parseInt(e.dataTransfer.getData("number"));
-  currentClass().methodes[methIndex].parameters.splice(
+  selectedClass().methodes[methIndex].parameters.splice(
     parameterIndex,
     0,
-    ...currentClass().methodes[methIndex].parameters.splice(src, 1));
+    ...selectedClass().methodes[methIndex].parameters.splice(src, 1));
 
-  setCurrentClass(currentClass());
+  setSelectedClass(selectedClass());
   startUpdateView();
 }
 /*

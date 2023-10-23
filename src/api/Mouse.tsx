@@ -1,6 +1,6 @@
 import { Point } from "./DrawUtils";
 import { startUpdateView } from "./GlobalState";
-import { setCurrentClass, isContextMenuOpen, setContextMenuOpen, currentClass, setLocationContextMenu } from "./Signals";
+import { setSelectedClass, isContextMenuOpen, setContextMenuOpen, selectedClass, setLocationContextMenu } from "./Signals";
 import { setStore, store } from "./Store";
 import { UMLClass } from "./UMLClass";
 
@@ -11,7 +11,7 @@ export enum MouseButtons {
 }
 
 export function onCanvasMouseDown(e: MouseEvent) {
-  setCurrentClass(null);
+  setSelectedClass(null);
   if (isContextMenuOpen()) {
     setContextMenuOpen(false);
   }
@@ -21,7 +21,7 @@ export function onCanvasMouseDown(e: MouseEvent) {
     var umlClass = findClassAt(e);
     if (umlClass) {
       updateReadyToMove(true);
-      setCurrentClass(umlClass);
+      setSelectedClass(umlClass);
       setStore(
         "selectedClassOffset",
         {
@@ -79,17 +79,17 @@ export function onCanvasMouseMove(e: MouseEvent) {
 
   if ((e.buttons & MouseButtons.PrimaryButton) === MouseButtons.PrimaryButton) {
     // primary mouse button is pressed
-    if (currentClass() && store.readyToMove) {
+    if (selectedClass() && store.readyToMove) {
       // If the primary button fell on a class while pressed
       const gridSnap = (store.grid.space / (1 + store.grid.subCount)) * store.zoom;
 
       const deltaX = (e.x - store.selectedClassOffset.x) * (1 / store.zoom);
       const deltaY = (e.y - store.selectedClassOffset.y) * (1 / store.zoom);
 
-      currentClass().x = Math.floor((deltaX) / gridSnap) * gridSnap;
-      currentClass().y = Math.floor((deltaY) / gridSnap) * gridSnap;
+      selectedClass().x = Math.floor((deltaX) / gridSnap) * gridSnap;
+      selectedClass().y = Math.floor((deltaY) / gridSnap) * gridSnap;
 
-      setCurrentClass(currentClass());
+      setSelectedClass(selectedClass());
       startUpdateView();
     } else {
       // if the primary button goes down on a class
@@ -113,7 +113,7 @@ export function onCanvasMouseMove(e: MouseEvent) {
 
 export function onCanvasMouseUp(e: MouseEvent) {
   if ((e.button & MouseButtons.SecondaryButton) === MouseButtons.SecondaryButton) {
-    if (currentClass() && store.readyToMove) {
+    if (selectedClass() && store.readyToMove) {
       updateReadyToMove(false);
       return;
     }
@@ -122,13 +122,13 @@ export function onCanvasMouseUp(e: MouseEvent) {
       // Disable selection
       setStore("selectionMode", false);
 
-      
+
 
       startUpdateView();
     } else {
       // show context menu
       var umlClass = findClassAt(e);
-      setCurrentClass(umlClass);
+      setSelectedClass(umlClass);
       setLocationContextMenu(e);
       setContextMenuOpen(true);
     }

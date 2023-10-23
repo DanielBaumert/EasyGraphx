@@ -222,8 +222,11 @@ export function drawDotLine(
 { 
     ctx.beginPath();
     ctx.strokeStyle = color;
-    ctx.lineDashOffset = 2;
+    ctx.setLineDash([2, 2]);
     ctx.moveTo(xStart, yStart);
     ctx.lineTo(xEnd, yEnd);
     ctx.stroke();
+
+    // reset
+    ctx.setLineDash([]);
 }
