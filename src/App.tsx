@@ -6,15 +6,16 @@ import { drawTextHCenter, measureText, drawRectangle, drawTextHLeft, Point, Sing
 import { Field } from './api/Field';
 import { Label } from './api/Label';
 import { UMLAttribute, UMLAttributeContainer } from './api/UMLAttribute';
-import { dropAttribute, dropMethode, popAttribute, popMethode, popParameter, pushAttribute, pushMethode, pushParameter, UMLClass, UMLContextMenu, UMLEnum, UMLInterface } from './api/UMLClass';
+import { dropAttribute, dropMethode, IUMLClass, popAttribute, popMethode, popParameter, pushAttribute, pushMethode, pushParameter, UMLClass, UMLContextMenu, UMLEnum, UMLInterface } from './api/UMLClass';
 import { UMLMethode, UMLMethodeContainer } from './api/UMLMethode';
 import { UMLParameter, UMLParameterContainer } from './api/UMLParameter';
 import { IUMLDerive, UMLClassDerive, UMLInterfaceDerive } from './api/UMLDerive';
 import { setStore, store } from './api/Store';
 import { changingsObserved, endUpdateView, getUpdateViewState, startUpdateView } from './api/GlobalState';
-import { currentClass, setCurrentClass, setLocationContextMenu, setContextMenuOpen, locationContextMenu, isContextMenuOpen, contentIndex, setContextIndex } from './api/Signals';
+import { selectedClass, setSelectedClass, setLocationContextMenu, setContextMenuOpen, locationContextMenu, isContextMenuOpen, contentIndex, setContextIndex } from './api/Signals';
 import { MouseButtons, onCanvasMouseDown, onCanvasMouseMove, onCanvasMouseUp } from './api/Mouse';
 import { canvas, Canvas } from './api/Canvas';
+import { getImplementsNameSymbol, ImplementsNameSymbolIUMLDervice } from './api/Symbols';
 // var exampleClass = new UMLClass();
 // exampleClass.isAbstract = true;
 // exampleClass.attributes.push(new UMLAttribute());
@@ -141,7 +142,7 @@ const App: Component = () => {
 
           var maxBoxHeight = maxHeaderBoxSize + maxAttrBoxHeight + 4 + maxMethBoxHeight + 2;
 
-          if(umlClass.uuid === currentClass()?.uuid) {
+          if(umlClass.uuid === selectedClass()?.uuid) {
 
             let borderColor = store.class.selectColor;
             ctx.shadowColor = borderColor as string;
@@ -356,31 +357,58 @@ const App: Component = () => {
   /*
    * Derives management
    */
-  function pushDerive(parentIndex: number) {
-    let parent: UMLClass = store.classes[parentIndex];
-    if(parent?.property?.trim().toLowerCase() === "interface"){ 
+  function pushDerive(parent : IUMLDerive | UMLClass, children: UMLClass | boolean = null, updateView : boolean = false) {
+
+    if(parent instanceof UMLClass && parent !== null
+      && children instanceof UMLClass && children !== null) 
+    { 
+      let derive : IUMLDerive = parent?.property?.trim().toLowerCase() === "interface"
+        ? new UMLInterfaceDerive(parent, children)
+        : new UMLClassDerive(parent, children);
+
       setStore(
         "derives",
         store.derives.length,
-        new UMLInterfaceDerive(parent, currentClass()));
-    } else { 
+        derive);
+
+      if(updateView) {
+        startUpdateView();
+      }
+
+    } else if(parent[getImplementsNameSymbol]() === ImplementsNameSymbolIUMLDervice) {
       setStore(
         "derives",
         store.derives.length,
-        new UMLClassDerive(parent, currentClass()));
+        parent as IUMLDerive); 
+        
+      if(children) {
+        startUpdateView();
+      }
     }
-    setCurrentClass(currentClass());
-    startUpdateView();
   }
 
-  function deleteDerive(parentIndex: number) {
-    let parent: UMLClass = store.classes[parentIndex];
-    setStore(
-      "derives",
-      store.derives.filter(x => 
-        x.parent.uuid !== parent.uuid 
-        || x.children.uuid !== currentClass().uuid));
-    startUpdateView();
+  function deleteDerive(parent: IUMLDerive | UMLClass | string, children: UMLClass | string | boolean = null, updateView : boolean = false) {
+    if(parent instanceof UMLClass && parent !== null
+      && children instanceof UMLClass && children !== null) 
+    { 
+      setStore(
+        "derives",
+        store.derives.filter(x => 
+          !(x.parent.uuid === parent.uuid && x.children.uuid === children.uuid)));
+      if(updateView) {
+        startUpdateView();
+      }
+    } else if(parent[getImplementsNameSymbol]() === ImplementsNameSymbolIUMLDervice) {
+      let derive = parent as IUMLDerive;
+      setStore(
+        "derives",
+        store.derives.filter(x => 
+          !(x.parent.uuid === derive.parent.uuid && x.children.uuid === derive.children.uuid)));
+
+      if(children) {
+        startUpdateView();
+      }
+    } 
   }
  /*
    * End - Derives management
@@ -391,7 +419,7 @@ const App: Component = () => {
  
   function updateIsStatic(e: Event) {
     if (e.currentTarget instanceof HTMLInputElement) {
-      currentClass().isAbstract = e.currentTarget.checked;
+      selectedClass().isAbstract = e.currentTarget.checked;
       startUpdateView();
     }
   }
@@ -456,12 +484,12 @@ const App: Component = () => {
     // remove class from store
     setStore(
       "classes",
-      store.classes.filter(x => x.uuid !== currentClass().uuid));
+      store.classes.filter(x => x.uuid !== selectedClass().uuid));
     
     // remove derives from that class
     setStore(
       "derives",
-      store.derives.filter(x => x.parent.uuid !== currentClass().uuid))
+      store.derives.filter(x => x.parent.uuid !== selectedClass().uuid))
       
     startUpdateView();
   }
@@ -662,7 +690,7 @@ const App: Component = () => {
           onclick={onContextMenuAddEnum} />
         <NavItem title="Delete Class"
           classExt={"hover:bg-red-500"}
-          hidden={currentClass() === null}
+          hidden={selectedClass() === null}
           onclick={onContextMenuRemoveClass} />
         <NavItem title="Save image"
           classExt={"hover:bg-gradient-to-r hover:from-cyan-500 hover:to-blue-500"}
@@ -684,18 +712,46 @@ const App: Component = () => {
         <Field title='Adrress' onInputChange={(e) => setStore("rtc", {target: e.currentTarget.value})} />
         <Button title='Connect' onclick={() => {}} />
       </div> */}
-      <Show when={currentClass()}>
+      <Show when={selectedClass()}>
         <div id="side-nav" class="fixed flex max-h-screen top-0 right-0 p-4 min-w-[351px]">
           <div class="flex grow flex-col">
             <div class="bg-white rounded border border-sky-400 px-4 py-2 mb-4 shadow">
               <Label title="Class" />
               <Field title='Property'
-                initValue={currentClass().property}
-                onInputChange={e => { currentClass().property = e.currentTarget.value; startUpdateView() }} />
+                initValue={selectedClass().property}
+                onInputChange={e => { 
+                  if(selectedClass().property.trim().toLowerCase() !== "interface" // source become an interface
+                    && e.currentTarget.value.trim().toLowerCase() === "interface")
+                  {
+                    let derives = store.derives.filter(x => 
+                      x instanceof UMLClassDerive 
+                      && x.parent.uuid === selectedClass().uuid);
+
+                    for(var derive of derives) { 
+                      deleteDerive(derive);
+                      pushDerive(new UMLInterfaceDerive(derive.parent, derive.children));
+                    }
+                  } else if (selectedClass().property.trim().toLowerCase() === "interface" 
+                    && e.currentTarget.value.trim().toLowerCase() !== "interface") 
+                  { 
+                    let derives = store.derives.filter(x => 
+                      x instanceof UMLInterfaceDerive 
+                      && x.parent.uuid === selectedClass().uuid);
+
+                    for(var derive of derives) {
+                      deleteDerive(derive);
+                      pushDerive(new UMLClassDerive(derive.parent, derive.children));
+                    }
+                  }
+
+                  selectedClass().property = e.currentTarget.value; 
+                  setSelectedClass(selectedClass());
+                  startUpdateView()
+                }} />
               <Field title='Name'
-                initValue={currentClass().name}
-                onInputChange={e => { currentClass().name = e.currentTarget.value; startUpdateView() }} />
-              <CheckBox id="static" title="Abstract" value={currentClass().isAbstract} onChanges={updateIsStatic} />
+                initValue={selectedClass().name}
+                onInputChange={e => { selectedClass().name = e.currentTarget.value; startUpdateView() }} />
+              <CheckBox id="static" title="Abstract" value={selectedClass().isAbstract} onChanges={updateIsStatic} />
             </div>
             {/* Tabs */}
             <div>
@@ -727,7 +783,7 @@ const App: Component = () => {
                 <div id="attr-container" class="flex flex-col overflow-hidden max-h-max bg-white rounded-b border-x border-b border-sky-400 p-2 shadow">
                   <Button title='Add attribute' onclick={pushAttribute} />
                   <div class="overflow-y-auto h-full">
-                    <For each={currentClass().attributes}>
+                    <For each={selectedClass().attributes}>
                       {(attr, i) => <UMLAttributeContainer
                         index={i()}
                         attr={attr}
@@ -742,7 +798,7 @@ const App: Component = () => {
                 <div id="meth-container" class="flex flex-col overflow-hidden max-h-max bg-white rounded-b border-x border-b border-sky-400 p-2 shadow">
                   <Button title='Add methode' onclick={pushMethode} />
                   <div class="overflow-y-auto h-full">
-                    <For each={currentClass().methodes}>
+                    <For each={selectedClass().methodes}>
                       {(methode, iMethode) => {
                         return (<UMLMethodeContainer
                           index={iMethode()}
@@ -752,7 +808,7 @@ const App: Component = () => {
                           delete={() => popMethode(iMethode())}
                           onPushParameter={() => pushParameter(iMethode())}>
 
-                          <For each={currentClass().methodes[iMethode()].parameters}>
+                          <For each={selectedClass().methodes[iMethode()].parameters}>
                             {(param, iParam) => <UMLParameterContainer
                               param={param}
                               popParameter={() => popParameter(iMethode(), iParam())}
@@ -770,16 +826,21 @@ const App: Component = () => {
                   <div class="overflow-y-auto h-full">
                     <For each={store.classes}>
                       {(umlClass, iUmlClass) => {
-                        if(umlClass.uuid === currentClass().uuid)
+                        if(umlClass.uuid === selectedClass().uuid)
                           return;
                         return (
                           <div 
                             class="relative flex flex-row bg-white rounded border border-sky-400 p-2 mb-2 shadow">
                             <CheckBoxSlim 
                               id={`static-derive-${umlClass.name}_${iUmlClass()}`} 
-                              value={store.derives.findIndex(x => x.children.uuid === currentClass().uuid && x.parent.uuid === umlClass.uuid) !== -1} 
+                              value={store.derives.findIndex(x => x.children.uuid === selectedClass().uuid && x.parent.uuid === umlClass.uuid) !== -1} 
                               title={umlClass.name} 
-                              onChanges={(e) => {e.currentTarget.checked ? pushDerive(iUmlClass()) : deleteDerive(iUmlClass()) }} />
+                              onChanges={(e) => {
+                                let deriveAction =  e.currentTarget.checked ? pushDerive : deleteDerive;
+                                deriveAction(umlClass, selectedClass());
+                                setSelectedClass(selectedClass());
+                                startUpdateView();  
+                              }} />
                           </div>
                       )}}
                     </For>
