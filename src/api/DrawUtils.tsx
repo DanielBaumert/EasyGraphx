@@ -149,12 +149,12 @@ export function fillTriangle(
     ctx: CanvasRenderingContext2D,
     x: number, y: number,
     w: number, h: number,
-    a: number,
+    alpha: number,
     strokeColor: string|CanvasGradient|CanvasPattern,
     fillColor: string|CanvasGradient|CanvasPattern) : void
 { 
-    let asin = Math.sin(a);
-    let acos = Math.cos(a);
+    let asin = Math.sin(alpha);
+    let acos = Math.cos(alpha);
     
     let hCenter = h * .5;
     //      p1
@@ -163,7 +163,7 @@ export function fillTriangle(
     //      \|
     //      p3
     let p1 = rotate(w, -hCenter, asin, acos);
-    let p2 = rotate(0, 0, asin, acos);
+    let p2 = {x: 0, y: 0}; // anchor
     let p3 = rotate(w, hCenter, asin, acos);
 
     ctx.beginPath();
@@ -205,19 +205,25 @@ export function drawLine(
     ctx:CanvasRenderingContext2D, 
     xStart: number, yStart: number, 
     xEnd: number, yEnd: number, 
+    lineWidth: number,
     color: string|CanvasGradient|CanvasPattern) 
 { 
     ctx.beginPath();
     ctx.strokeStyle = color;
+    ctx.lineWidth = lineWidth;
     ctx.moveTo(xStart, yStart);
     ctx.lineTo(xEnd, yEnd);
     ctx.stroke();
+    
+    // reset
+    ctx.lineWidth = 1;
 }
 
 export function drawDotLine(
     ctx:CanvasRenderingContext2D, 
     xStart: number, yStart: number, 
     xEnd: number, yEnd: number, 
+    lineWidth: number,
     color: string|CanvasGradient|CanvasPattern) 
 { 
     ctx.beginPath();
@@ -226,7 +232,8 @@ export function drawDotLine(
     ctx.moveTo(xStart, yStart);
     ctx.lineTo(xEnd, yEnd);
     ctx.stroke();
-
+    
     // reset
+    ctx.lineWidth = 1;
     ctx.setLineDash([]);
 }

@@ -121,9 +121,7 @@ export function onCanvasMouseUp(e: MouseEvent) {
     if (store.selectionMode) {
       // Disable selection
       setStore("selectionMode", false);
-
-
-
+      // 
       startUpdateView();
     } else {
       // show context menu

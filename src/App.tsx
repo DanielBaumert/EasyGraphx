@@ -73,37 +73,39 @@ const App: Component = () => {
 
         if (store.grid.subVisuale) {
           for (var x = -gridSize + xClusterShift; x < canvas.width + gridSize;) {
-            drawLine(ctx, x, 0, x, canvas.height, store.grid.color);
+            drawLine(ctx, x, 0, x, canvas.height, 1, store.grid.color);
 
             for (var sx = 0; sx < store.grid.subCount; sx++) {
               x += subGridSize;
-              drawLine(ctx, x, 0, x, canvas.height, store.grid.subColor);
+              drawLine(ctx, x, 0, x, canvas.height, 1, store.grid.subColor);
             }
 
             x += subGridSize;
           }
 
           for (var y = -gridSize + yClusterShift; y < canvas.height + gridSize;) {
-            drawLine(ctx, 0, y, canvas.width, y, store.grid.color);
+            drawLine(ctx, 0, y, canvas.width, y, 1, store.grid.color);
 
             for (var sy = 0; sy < store.grid.subCount; sy++) {
               y += subGridSize;
-              drawLine(ctx, 0, y, canvas.width, y, store.grid.subColor);
+              drawLine(ctx, 0, y, canvas.width, y, 1, store.grid.subColor);
             }
 
             y += subGridSize;
           }
         } else {
           for (var x = 0 + xClusterShift; x < canvas.width; x += gridSize) {
-            drawLine(ctx, x, 0, x, canvas.height, store.grid.color);
+            drawLine(ctx, x, 0, x, canvas.height, 1, store.grid.color);
           }
           for (var y = 0 + yClusterShift; y < canvas.height; y += gridSize) {
-            drawLine(ctx, 0, y, canvas.width, y, store.grid.color);
+            drawLine(ctx, 0, y, canvas.width, y, 1, store.grid.color);
           }
         }
       }
       // Draw classes
       {
+        const linePadding = 2
+        const douleLinePadding = linePadding * 2
         ctx.font = `${store.fontSize * store.zoom}px Arial`;
         const xPadding = 16 * store.zoom;
 
@@ -140,7 +142,7 @@ const App: Component = () => {
           const xClassOffset = store.viewOffset.x + (umlClass.x * store.zoom);
           const yClassOffset = store.viewOffset.y + (umlClass.y * store.zoom);
 
-          var maxBoxHeight = maxHeaderBoxSize + maxAttrBoxHeight + 4 + maxMethBoxHeight + 2;
+          var maxBoxHeight = maxHeaderBoxSize + maxAttrBoxHeight + maxMethBoxHeight + (linePadding + linePadding + linePadding);
 
           if(umlClass.uuid === selectedClass()?.uuid) {
 
@@ -165,8 +167,8 @@ const App: Component = () => {
 
           // draw attributes
           var yOffset = yClassOffset + maxHeaderBoxSize;
-          drawLine(ctx, xClassOffset, yOffset, xClassOffset + maxBoxWidth, yOffset, "black");
-          yOffset += 2;
+          drawLine(ctx, xClassOffset, yOffset, xClassOffset + maxBoxWidth, yOffset, 1, "black");
+          yOffset += linePadding;
           //drawRectangle(ctx, xClassOffset, yOffset, maxBoxWidth, maxAttrBoxHeight, borderColor, store.class.background);
           for (var attr of attrSizes) {
             drawTextHLeft(ctx, xClassOffset, yOffset, xPadding, attr, store.class.fontColor);
@@ -175,9 +177,9 @@ const App: Component = () => {
 
           // draw methodes
           yOffset = yClassOffset + maxHeaderBoxSize + maxAttrBoxHeight;
-          yOffset += 2;
-          drawLine(ctx, xClassOffset, yOffset, xClassOffset + maxBoxWidth, yOffset, "black");
-          yOffset += 2;
+          yOffset += linePadding;
+          drawLine(ctx, xClassOffset, yOffset, xClassOffset + maxBoxWidth, yOffset, 1,"black");
+          yOffset += linePadding;
           //drawRectangle(ctx, xClassOffset, yOffset, maxBoxWidth, maxMethBoxHeight, borderColor, store.class.background);
           for (var meth of methSizes) {
             drawTextHLeft(ctx, xClassOffset, yOffset, xPadding, meth, store.class.fontColor);
@@ -186,7 +188,7 @@ const App: Component = () => {
 
           // set new size
           umlClass.width = maxBoxWidth;
-          umlClass.height = maxHeaderBoxSize + maxAttrBoxHeight + maxMethBoxHeight;
+          umlClass.height = maxHeaderBoxSize + maxAttrBoxHeight + maxMethBoxHeight + (3 * linePadding);
           ctx.shadowBlur = 0;
         }
       }
@@ -201,31 +203,31 @@ const App: Component = () => {
           
           if(derive.parent.x < derive.children.x) {
             // parent left
-            let dx = (derive.children.x - derive.parent.x);
-            let dy = (derive.children.y - derive.parent.y);
-            let m = dy / dx;
-            
             let srcx = store.viewOffset.x + derive.parent.x + derive.parent.width;
             let srcy = store.viewOffset.y + derive.parent.y + (derive.parent.height * .5);
 
             let dstx = store.viewOffset.x + derive.children.x;
             let dsty = store.viewOffset.y + derive.children.y + (derive.children.height * .5);
 
-            lineMode(ctx, srcx, srcy, dstx, dsty, "black");
+            let dx = dstx - srcx;
+            let dy = dsty - srcy;
+            let m = Math.atan(dy / dx);
+
+            lineMode(ctx, srcx, srcy, dstx, dsty, 1, "black");
             fillTriangle(ctx, srcx, srcy, 16, 16, m, "black", "white");
           } else { 
             // parent right
-            let dx = (derive.parent.x - derive.children.x);
-            let dy = (derive.parent.y - derive.children.y);
-            let m = dy / dx + Math.PI;
-            
             let srcx = store.viewOffset.x + derive.children.x +  derive.children.width;
             let srcy = store.viewOffset.y + derive.children.y + (derive.children.height * .5);
 
             let dstx = store.viewOffset.x + derive.parent.x;
             let dsty = store.viewOffset.y + derive.parent.y + (derive.parent.height * .5);
 
-            lineMode(ctx, srcx, srcy, dstx, dsty, "black");
+            let dx = (dstx - srcx);
+            let dy = (dsty - srcy);
+            let m = Math.atan(dy / dx) + Math.PI;
+
+            lineMode(ctx, srcx, srcy, dstx, dsty, 1, "black");
             fillTriangle(ctx, dstx, dsty, 16, 16, m, "black", "white");
           }
         }
