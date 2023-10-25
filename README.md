@@ -36,11 +36,35 @@ You can deploy the `dist` folder to any static host provider (netlify, surge, no
 
 ## Tasks 
 - [ ] Web RTC
-- [ ] Derive line/arrow improvment
+  - [ ] TeamChat
+    - [ ] UI
+    - [ ] Function
+      - [ ] Send message
+      - [ ] Receive message
+  - [ ] User Management
+    - [ ] UI
+    - [ ] Function
+      - [ ] Kick
+      - [ ] Invite
+      - [ ] Block
+- [x] Derive line/arrow improvment
   - [ ] Slim Derive save (only uuid)
   - [ ] Config
-  - [ ] Arrow rotation
-  - [ ] etc.
+  - [x] Arrow rotation
+  - [ ] Line Selection improvements
 - [ ] Derives searchbar
+- [ ] auto formatting
+  - [ ] Up-Down formatting
+  - [ ] Down-Up formatting
+  - [ ] Left-Right formatting
+  - [ ] Right-Left formatting
 - [ ] Group Selection
-- [ ] Group Moving
+  - [x] Visiable selection area
+  - [ ] Marking selected classes
+  - [ ] Moving
+- [ ] Comment function 
+- [ ] Browser save
+
+
+## Idee
+- Replace the derive-meu to connection-menu with connection type (derive, use, ... ) selection option and config
