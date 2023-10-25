@@ -16,6 +16,7 @@ import { selectedClass, setSelectedClass, setLocationContextMenu, setContextMenu
 import { MouseButtons, onCanvasMouseDown, onCanvasMouseMove, onCanvasMouseUp } from './api/Mouse';
 import { canvas, Canvas } from './api/Canvas';
 import { getImplementsNameSymbol, ImplementsNameSymbolIUMLDervice } from './api/Symbols';
+import { Math2 } from './api/Math2';
 // var exampleClass = new UMLClass();
 // exampleClass.isAbstract = true;
 // exampleClass.attributes.push(new UMLAttribute());
@@ -200,134 +201,80 @@ const App: Component = () => {
           let lineMode = derive instanceof UMLInterfaceDerive
             ? drawDotLine
             : drawLine;
+
+          let dx = derive.children.x - derive.parent.x;
+          let dy = derive.children.y - derive.parent.y;
+          let m = Math.atan(dy / dx);
           
-          if(derive.parent.x < derive.children.x) {
-            // parent left
-            let srcx = store.viewOffset.x + derive.parent.x + derive.parent.width;
-            let srcy = store.viewOffset.y + derive.parent.y + (derive.parent.height * .5);
+          if(-Math2.RAD45 < m && m < Math2.RAD45) { 
+            if(derive.parent.x < derive.children.x) {
+              // parent left
+              let srcx = store.viewOffset.x + derive.parent.x + derive.parent.width;
+              let srcy = store.viewOffset.y + derive.parent.y + (derive.parent.height * .5);
+  
+              let dstx = store.viewOffset.x + derive.children.x;
+              let dsty = store.viewOffset.y + derive.children.y + (derive.children.height * .5);
+  
+              let dx = dstx - srcx;
+              let dy = dsty - srcy;
+              let m = Math.atan(dy / dx);
+  
+              lineMode(ctx, srcx, srcy, dstx, dsty, 1, "black");
+              fillTriangle(ctx, srcx, srcy, 16, 16, m, "black", "white");
+            } else {
+              // parent right
+              let srcx = store.viewOffset.x + derive.children.x +  derive.children.width;
+              let srcy = store.viewOffset.y + derive.children.y + (derive.children.height * .5);
 
-            let dstx = store.viewOffset.x + derive.children.x;
-            let dsty = store.viewOffset.y + derive.children.y + (derive.children.height * .5);
+              let dstx = store.viewOffset.x + derive.parent.x;
+              let dsty = store.viewOffset.y + derive.parent.y + (derive.parent.height * .5);
 
-            let dx = dstx - srcx;
-            let dy = dsty - srcy;
-            let m = Math.atan(dy / dx);
+              let dx = (dstx - srcx);
+              let dy = (dsty - srcy);
+              let m = Math.atan(dy / dx) + Math.PI;
 
-            lineMode(ctx, srcx, srcy, dstx, dsty, 1, "black");
-            fillTriangle(ctx, srcx, srcy, 16, 16, m, "black", "white");
-          } else { 
-            // parent right
-            let srcx = store.viewOffset.x + derive.children.x +  derive.children.width;
-            let srcy = store.viewOffset.y + derive.children.y + (derive.children.height * .5);
+              lineMode(ctx, srcx, srcy, dstx, dsty, 1, "black");
+              fillTriangle(ctx, dstx, dsty, 16, 16, m, "black", "white");
+            }
+          } else if (derive.parent.y < derive.children.y) { 
+            let srcx = store.viewOffset.x + derive.parent.x + (derive.parent.width * .5);
+            let srcy = store.viewOffset.y + derive.parent.y + derive.parent.height;
 
-            let dstx = store.viewOffset.x + derive.parent.x;
-            let dsty = store.viewOffset.y + derive.parent.y + (derive.parent.height * .5);
+            let dstx = store.viewOffset.x + derive.children.x + (derive.children.width * .5);
+            let dsty = store.viewOffset.y + derive.children.y;
 
             let dx = (dstx - srcx);
             let dy = (dsty - srcy);
-            let m = Math.atan(dy / dx) + Math.PI;
+            let m = Math.atan(dy / dx);
+
+            if(m < 0)
+            {
+              m -= Math2.RAD180   
+            }
+
+
+            lineMode(ctx, srcx, srcy, dstx, dsty, 1, "black");
+            fillTriangle(ctx, srcx, srcy, 16, 16, m, "black", "white");
+          } else {
+            let srcx = store.viewOffset.x + derive.children.x + (derive.children.width * .5);
+            let srcy = store.viewOffset.y + derive.children.y + derive.children.height;
+
+            let dstx = store.viewOffset.x + derive.parent.x + (derive.parent.width * .5);
+            let dsty = store.viewOffset.y + derive.parent.y;
+
+            let dx = (dstx - srcx);
+            let dy = (dsty - srcy);
+            let m = Math.atan(dy / dx);
+
+            if(m > 0)
+            {
+              m -= Math2.RAD180   
+            }
 
             lineMode(ctx, srcx, srcy, dstx, dsty, 1, "black");
             fillTriangle(ctx, dstx, dsty, 16, 16, m, "black", "white");
           }
         }
-      //   for (var connection of store.connections) {
-      //     const direction = [
-      //       Math.sign(connection.dst.x - connection.src.x), 
-      //       Math.sign(connection.dst.y - connection.dst.x)
-      //     ];
-
-      //     const rightSide = connection.src.x + connection.src.width;
-      //     const distanceY = (connection.dst.y + (connection.dst.height / 2))
-      //       - (connection.src.y + (connection.src.height / 2));
-          
-      //       switch(true) { 
-      //         case connection.src.y == connection.dst.y: 
-      //           // horizontal alined
-      //           { 
-      //             const srcY = connection.src.y * store.zoom;
-                  
-      //             const srcCenterH = 
-      //               store.viewOffset.y 
-      //               + srcY 
-      //               + (connection.src.height <= connection.dst.height 
-      //                 ? connection.src.height / 2
-      //                 : connection.dst.height / 2);
-
-      //             const [startX, endX] = connection.src.x + connection.src.width < connection.dst.x 
-      //               ? [ connection.src.x * store.zoom + connection.src.width,
-      //                   connection.dst.x * store.zoom]
-      //               : [ connection.dst.x * store.zoom + connection.dst.width,
-      //                   connection.src.x * store.zoom ];
-                    
-      //             ctx.strokeStyle = "black";
-      //             ctx.beginPath();
-      //             ctx.moveTo(
-      //               store.viewOffset.x + startX,
-      //               srcCenterH);
-      //             ctx.lineTo(
-      //               store.viewOffset.x + endX,
-      //               srcCenterH);
-      //             ctx.stroke();
-      //           }
-      //           break;
-      //         case connection.src.x + (connection.src.width / 2) === connection.dst.x + (connection.dst.width / 2): 
-      //           // vertical alined
-      //           {
-      //             const src = connection.src,
-      //                   dst = connection.dst;
-      //             const srcY = src.y * store.zoom;
-
-      //             const center = store.viewOffset.x + srcY + src.width / 2;
-      //             const startY = Math.min(src.y + src.height, dst.y);
-      //             const endY = Math.max(src.y, dst.y);
-
-    
-      //             ctx.strokeStyle = "black";
-      //             ctx.beginPath();
-      //             ctx.moveTo(center, startY);
-      //             ctx.lineTo(center, endY);
-      //             ctx.stroke();
-      //           }
-      //         case connection.src.x <= connection.dst.x && connection.dst.x <= connection.src.x + connection.src.width: 
-      //           {
-      //             const src = connection.src,
-      //                   dst = connection.dst;
-      //             const srcY = src.y * store.zoom,
-      //                   dstY = dst.y * store.zoom;
-
-      //             const srcCenterV = Math.min(src.width, dst.width) / 2;
-                
-      //           }
-      //           break;
-      //         default:
-      //           const srcX = connection.src.x * store.zoom;
-      //           const srcY = connection.src.y * store.zoom;
-      //           const dstX = connection.dst.x * store.zoom;
-      //           const dstY = connection.dst.y * store.zoom;
-
-      //           const srcCenterH = connection.src.height / 2;
-      //           const dstCenterH = connection.dst.height / 2;
-      //           const distanceX = connection.dst.x - rightSide;
-      //           const src2dstCenter = connection.src.width + (distanceX / 2);
-
-      //           ctx.beginPath();
-      //           ctx.moveTo(
-      //             store.viewOffset.x + srcX + connection.src.width,
-      //             store.viewOffset.y + srcY + srcCenterH);
-      //           ctx.lineTo( // to center
-      //             store.viewOffset.x + srcX + src2dstCenter, 
-      //             store.viewOffset.y + srcY + srcCenterH);
-      //           ctx.lineTo( // to down
-      //             store.viewOffset.x + srcX + src2dstCenter, 
-      //             store.viewOffset.y + dstY + dstCenterH);
-      //           ctx.lineTo(
-      //             store.viewOffset.x + dstX, 
-      //             store.viewOffset.y + dstY + dstCenterH);
-      //           ctx.stroke();
-      //           break;
-      //       }
-      //   }
       }
       // Draw hover class effect
       {
