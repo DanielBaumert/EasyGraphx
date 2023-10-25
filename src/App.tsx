@@ -53,6 +53,7 @@ const App: Component = () => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     ctx = canvas.getContext("2d");
+    ctx.translate(0.5, 0.5);
     requestAnimationFrame(() => render(ctx));
   });
 
@@ -106,7 +107,6 @@ const App: Component = () => {
       // Draw classes
       {
         const linePadding = 2
-        const douleLinePadding = linePadding * 2
         ctx.font = `${store.fontSize * store.zoom}px Arial`;
         const xPadding = 16 * store.zoom;
 
@@ -196,6 +196,7 @@ const App: Component = () => {
 
       // Draw connections
       {
+        let arrowSize = store.fontSize * .8;
         for (const derive of store.derives) {
           // calc vector
           let lineMode = derive instanceof UMLInterfaceDerive
@@ -220,7 +221,7 @@ const App: Component = () => {
               let m = Math.atan(dy / dx);
   
               lineMode(ctx, srcx, srcy, dstx, dsty, 1, "black");
-              fillTriangle(ctx, srcx, srcy, 16, 16, m, "black", "white");
+              fillTriangle(ctx, srcx, srcy, arrowSize, arrowSize, m, "black", "white");
             } else {
               // parent right
               let srcx = store.viewOffset.x + derive.children.x +  derive.children.width;
@@ -234,7 +235,7 @@ const App: Component = () => {
               let m = Math.atan(dy / dx) + Math.PI;
 
               lineMode(ctx, srcx, srcy, dstx, dsty, 1, "black");
-              fillTriangle(ctx, dstx, dsty, 16, 16, m, "black", "white");
+              fillTriangle(ctx, dstx, dsty, arrowSize, arrowSize, m, "black", "white");
             }
           } else if (derive.parent.y < derive.children.y) { 
             let srcx = store.viewOffset.x + derive.parent.x + (derive.parent.width * .5);
@@ -254,7 +255,7 @@ const App: Component = () => {
 
 
             lineMode(ctx, srcx, srcy, dstx, dsty, 1, "black");
-            fillTriangle(ctx, srcx, srcy, 16, 16, m, "black", "white");
+            fillTriangle(ctx, srcx, srcy, arrowSize, arrowSize, m, "black", "white");
           } else {
             let srcx = store.viewOffset.x + derive.children.x + (derive.children.width * .5);
             let srcy = store.viewOffset.y + derive.children.y + derive.children.height;
@@ -272,7 +273,7 @@ const App: Component = () => {
             }
 
             lineMode(ctx, srcx, srcy, dstx, dsty, 1, "black");
-            fillTriangle(ctx, dstx, dsty, 16, 16, m, "black", "white");
+            fillTriangle(ctx, dstx, dsty, arrowSize, arrowSize, m, "black", "white");
           }
         }
       }
