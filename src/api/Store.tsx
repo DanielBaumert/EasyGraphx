@@ -1,11 +1,12 @@
 import { createStore } from "solid-js/store";
 import { Point } from "./DrawUtils";
 import { UMLClass } from "./UMLClass";
-import { IUMLDerive } from "./UMLDerive";
+import { UMLRelationship } from "./UMLRelationship";
 
 export const [store, setStore] = createStore<
   {
     classes: UMLClass[],
+    relationships: UMLRelationship[],
     grid: {
       background: string | CanvasGradient | CanvasPattern,
       space: number,
@@ -24,7 +25,6 @@ export const [store, setStore] = createStore<
     mousePrimary: Point,
     mouseSecondary: Point,
     mouse: MouseEvent,
-    derives: IUMLDerive[],
     selectedClassOffset: Point,
     hoverClass?: UMLClass,
     hoverBorder: boolean,
@@ -38,7 +38,7 @@ export const [store, setStore] = createStore<
     }
   }>({
     classes: [],
-    derives: [],
+    relationships: [],
     grid: {
       background: "white",
       color: "#00505033",
@@ -64,7 +64,7 @@ export const [store, setStore] = createStore<
     selectionMode: false,
     viewOffset: { x: 0, y: 0 },
     zoom: 1.0,
-    fontSize: 18,
+    fontSize: 42,
     rtc : {
       target: ""
     }

@@ -180,16 +180,147 @@ export function fillTriangle(
     
     ctx.stroke();
     ctx.fill();
+}
 
-    function rotate(x: number, y: number, alphaSin: number, alphaCos: number)
-        : {x: number, y: number}
-    { 
-        return { 
-            x: (x * alphaCos) - (y * alphaSin),
-            y: (x * alphaSin) + (y * alphaCos)
-        }
+export function drawArrow(
+    ctx: CanvasRenderingContext2D,
+    x: number, y: number,
+    w: number, h: number,
+    alpha: number,
+    strokeColor: string|CanvasGradient|CanvasPattern,
+    fillColor: string|CanvasGradient|CanvasPattern) : void
+{ 
+    let asin = Math.sin(alpha);
+    let acos = Math.cos(alpha);
+    
+    let hCenter = h * .5;
+    //      p1
+    //      / 
+    // p2  . 
+    //      \ 
+    //      p3
+    let p1 = rotate(w, -hCenter, asin, acos);
+    let p2 = {x: 0, y: 0}; // anchor
+    let p3 = rotate(w, hCenter, asin, acos);
+
+    ctx.beginPath();
+    ctx.strokeStyle = strokeColor;
+    ctx.fillStyle = fillColor;
+
+    // x += w;
+    // y += hCenter;
+    
+    ctx.moveTo(x + p1.x, y + p1.y);
+    ctx.lineTo(x + p2.x, y + p2.y);
+    ctx.lineTo(x + p3.x, y + p3.y);
+    
+    ctx.stroke();
+}
+
+function rotate(x: number, y: number, alphaSin: number, alphaCos: number) : {x: number, y: number}
+{ 
+    return { 
+        x: (x * alphaCos) - (y * alphaSin),
+        y: (x * alphaSin) + (y * alphaCos)
     }
 }
+
+
+export function fillContainment(
+    ctx: CanvasRenderingContext2D,
+    x: number, y: number,
+    w: number, h: number,
+    alpha: number,
+    strokeColor: string|CanvasGradient|CanvasPattern,
+    fillColor: string|CanvasGradient|CanvasPattern) : void
+{ 
+    let asin = Math.sin(alpha);
+    let acos = Math.cos(alpha);
+    
+    let hCenter = h * .5;
+    let wCenter = w * .5;
+    //      p1               p1 origion
+    //      /|\
+    // p3  --|-- p4
+    //      \|/
+    //      p2
+    let p1 = {x: 0, y: 0};
+    let p2 = rotate(w, 0, asin, acos);
+
+    let p3 = rotate(wCenter, hCenter, asin, acos);
+    let p4 = rotate(wCenter, -hCenter, asin, acos);
+
+    let r1 = rotate(wCenter, 0, asin, acos);
+
+    ctx.beginPath();
+    ctx.strokeStyle = strokeColor;
+    ctx.fillStyle = fillColor;
+
+    // x += w;
+    // y += hCenter;
+    
+    ctx.arc(x + r1.x, y + r1.y, hCenter, 0, FULL_CIRCLE);
+    ctx.stroke();
+    ctx.fill();
+
+    ctx.moveTo(x + p1.x, y + p1.y);
+    ctx.lineTo(x + p2.x, y + p2.y);
+
+    ctx.moveTo(x + p3.x, y + p3.y);
+    ctx.lineTo(x + p4.x, y + p4.y);
+    ctx.closePath();
+
+    ctx.stroke();
+}
+
+export function fillKristal(
+    ctx: CanvasRenderingContext2D,
+    x: number, y: number,
+    w: number, h: number,
+    alpha: number,
+    strokeColor: string|CanvasGradient|CanvasPattern,
+    fillColor: string|CanvasGradient|CanvasPattern) : void
+{ 
+    let asin = Math.sin(alpha);
+    let acos = Math.cos(alpha);
+    
+    let hCenter = h * .3;
+    let wCenter = w * .5;
+    //      p1               p1 origion
+    //      /\
+    // p3  :  : p4
+    //      \/
+    //      p2
+    let p3 = {x: 0, y: 0};
+    let p1 = rotate(wCenter, hCenter, asin, acos);
+    let p4 = rotate(w, 0, asin, acos);
+    let p2 = rotate(wCenter, -hCenter, asin, acos);
+    
+    ctx.beginPath();
+    ctx.strokeStyle = strokeColor;
+    ctx.fillStyle = fillColor;
+
+    // x += w;
+    // y += hCenter;
+    ctx.moveTo(x + p3.x, y + p3.y);
+    ctx.lineTo(x + p1.x, y + p1.y);
+    ctx.lineTo(x + p4.x, y + p4.y);
+    ctx.lineTo(x + p2.x, y + p2.y);
+    ctx.closePath();
+
+    ctx.stroke();
+    ctx.fill();
+
+}
+
+export function drawNone(
+    ctx: CanvasRenderingContext2D,
+    x: number, y: number,
+    w: number, h: number,
+    alpha: number,
+    strokeColor: string|CanvasGradient|CanvasPattern,
+    fillColor: string|CanvasGradient|CanvasPattern) : void
+{ }
 
 export function strokeRectangle(
     ctx:CanvasRenderingContext2D, 
@@ -228,7 +359,7 @@ export function drawDotLine(
 { 
     ctx.beginPath();
     ctx.strokeStyle = color;
-    ctx.setLineDash([2, 2]);
+    ctx.setLineDash([8, 4]);
     ctx.moveTo(xStart, yStart);
     ctx.lineTo(xEnd, yEnd);
     ctx.stroke();
@@ -237,3 +368,4 @@ export function drawDotLine(
     ctx.lineWidth = 1;
     ctx.setLineDash([]);
 }
+
