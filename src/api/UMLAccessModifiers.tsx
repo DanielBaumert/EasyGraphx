@@ -2,7 +2,7 @@ import { Component, createSignal, JSX, onMount } from "solid-js";
 import { CheckBox } from "./CheckBox";
 import { SmallLabel } from "./Label";
 
-export enum AccessModifiers { 
+export enum UMLAccessModifiers { 
     Public = '+',
     Private = '-',
     Proteced = '#',
@@ -10,17 +10,17 @@ export enum AccessModifiers {
 }
 
 export interface IUMLAccessModifiers { 
-    accessModifier?: AccessModifiers;
+    accessModifier?: UMLAccessModifiers;
 }
 
 export const UMLAccessModifiersContainer : Component<{
     id: string,
-    initValue?: AccessModifiers,
-    onChange: (accessModifier:AccessModifiers)=>void
+    initValue?: UMLAccessModifiers,
+    onChange: (accessModifier:UMLAccessModifiers)=>void
 }> = (props) => { 
-    const [accessModifier, setAccessModifier] = createSignal<AccessModifiers>(props.initValue);
+    const [accessModifier, setAccessModifier] = createSignal<UMLAccessModifiers>(props.initValue);
 
-    function updateAccessModifier(modifiers:AccessModifiers) { 
+    function updateAccessModifier(modifiers:UMLAccessModifiers) { 
         var state = accessModifier() != modifiers ? modifiers : undefined;
 
         setAccessModifier(state);
@@ -35,25 +35,25 @@ export const UMLAccessModifiersContainer : Component<{
                 <CheckBox 
                     title="Public (+)" 
                     id={`public-${props.id}`}
-                    value={accessModifier() === AccessModifiers.Public} 
-                    onChanges={e => updateAccessModifier(AccessModifiers.Public)} />
+                    value={accessModifier() === UMLAccessModifiers.Public} 
+                    onChanges={() => updateAccessModifier(UMLAccessModifiers.Public)} />
                 <CheckBox 
                     title="Protected (#)" 
                     id={`protected-${props.id}`}
-                    value={accessModifier() === AccessModifiers.Proteced} 
-                    onChanges={e => updateAccessModifier(AccessModifiers.Proteced)}/>
+                    value={accessModifier() === UMLAccessModifiers.Proteced} 
+                    onChanges={() => updateAccessModifier(UMLAccessModifiers.Proteced)}/>
             </div>
             <div class="flex flex-col ">
                 <CheckBox 
                     title="Private (-)"
                     id={`private-${props.id}`}
-                    value={accessModifier() === AccessModifiers.Private} 
-                    onChanges={e => updateAccessModifier(AccessModifiers.Private)} />
+                    value={accessModifier() === UMLAccessModifiers.Private} 
+                    onChanges={() => updateAccessModifier(UMLAccessModifiers.Private)} />
                 <CheckBox 
                     title="Internal (~)" 
                     id={`internal-${props.id}`}
-                    value={accessModifier() === AccessModifiers.Internal} 
-                    onChanges={e => updateAccessModifier(AccessModifiers.Internal)}/>
+                    value={accessModifier() === UMLAccessModifiers.Internal} 
+                    onChanges={() => updateAccessModifier(UMLAccessModifiers.Internal)}/>
             </div>
         </div>
         </>);

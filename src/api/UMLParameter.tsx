@@ -2,6 +2,7 @@ import { Component, createSignal, Show } from "solid-js";
 import { Field } from "./Field";
 import { SmallLabel } from "./Label";
 import { StringBuilder } from "./StringBuilder";
+import { startUpdateView } from "./GlobalState";
 
 export interface IUMLParameter {
     name?: string;
@@ -32,11 +33,20 @@ export class UMLParameter {
 
 export const UMLParameterContainer: Component<{
     param: UMLParameter,
-    update: Function,
     popParameter: Function,
 }> = (props) => {
     const [isExpanded, setExpanded] = createSignal<boolean>(false);
     
+    function onNameInputChanged(e) {
+        props.param.name = e.currentTarget.value;
+        startUpdateView();
+    }
+
+    function onTypeInputChanged(e) {
+        props.param.type = e.currentTarget.value;
+        startUpdateView();
+    }
+
     return (
         <div class="relative border rounded p-1 mb-1">
             <div class={`absolute flex flex-row ${!isExpanded() ? "h-full items-center top-0" : "top-1"} right-1`}>
@@ -57,11 +67,11 @@ export const UMLParameterContainer: Component<{
                 <Field
                     title="Name"
                     initValue={props.param.name}
-                    onInputChange={e => { props.param.name = e.currentTarget.value; props.update() }} />
+                    onInputChange={onNameInputChanged} />
                 <Field
                     title="Type"
                     initValue={props.param.type}
-                    onInputChange={e => { props.param.type = e.currentTarget.value; props.update() }} />
+                    onInputChange={onTypeInputChanged} />
             </Show>
             <Show when={!isExpanded()}>
                 <SmallLabel title={props.param.toString() === "" ? "Unnamed" : props.param.toString()} />

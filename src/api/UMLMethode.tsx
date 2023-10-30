@@ -1,12 +1,12 @@
-import { Component, createSignal, For, ParentComponent, Show } from "solid-js";
-import { JSX } from "solid-js/jsx-runtime";
+import { createSignal, ParentComponent, Show } from "solid-js";
 import { Button } from "./Button";
 import { CheckBox } from "./CheckBox";
 import { Field } from "./Field";
-import { Label, SmallLabel } from "./Label";
+import { SmallLabel } from "./Label";
 import { StringBuilder } from "./StringBuilder";
-import { AccessModifiers, IUMLAccessModifiers, UMLAccessModifiersContainer } from "./UMLAccessModifiers";
+import { UMLAccessModifiers, IUMLAccessModifiers, UMLAccessModifiersContainer } from "./UMLAccessModifiers";
 import { UMLParameter } from "./UMLParameter";
+import { startUpdateView } from "./GlobalState";
 
 
 export interface IUMLMethode extends IUMLAccessModifiers {
@@ -20,7 +20,7 @@ export interface IUMLMethode extends IUMLAccessModifiers {
 export class UMLMethode implements IUMLMethode {
     isStatic?: boolean;
     name: string;
-    accessModifier?: AccessModifiers;
+    accessModifier?: UMLAccessModifiers;
     parameters: UMLParameter[];
     returnType?: string;
 
@@ -50,43 +50,48 @@ export class UMLMethode implements IUMLMethode {
     }
 }
 
-
 export const UMLMethodeContainer: ParentComponent<{
     index: number,
     methode: UMLMethode,
-    onDrop: JSX.EventHandlerUnion<HTMLDivElement, DragEvent>,
     delete: Function,
-    update: Function,
     onPushParameter: Function
 }> = (props) => {
     const [isExpanded, setExpanded] = createSignal<boolean>();
     const [isMethodeNameNotEmpty, setMethodeNameNotEmpty] = createSignal<boolean>(props.methode.name !== "");
 
-    function onDragStart(e: DragEvent) {
-        e.dataTransfer.setData("number", props.index.toString());
+    function onMethodeNameInputChanged(e) {
+        props.methode.name = e.currentTarget.value;
+        setMethodeNameNotEmpty(props.methode.name !== "");
+        startUpdateView();
+    }
+
+    function onStaticPropertyStateChanged(e) {
+        props.methode.isStatic = e.currentTarget.checked;
+        startUpdateView();
+    }
+
+    function onReturnTypeInputChanged(e) {
+        props.methode.returnType = e.currentTarget.value;
+        startUpdateView();
     }
 
     return (
-        <div draggable={true}
-            onDrop={props.onDrop}
-            onDragOver={e => e.preventDefault()}
-            onDragStart={onDragStart}
-            class={`relative flex flex-row bg-white rounded border ${isMethodeNameNotEmpty() ? "border-sky-400" : "border-red-400"} p-2 mb-2 shadow`}>
+        <div class={`relative flex flex-row bg-white rounded border ${isMethodeNameNotEmpty() ? "border-sky-400" : "border-red-400"} p-2 mb-2 shadow`}>
             <Show when={isExpanded()}>
                 <div class="flex flex-col">
                     <Field
                         title="Name"
                         initValue={props.methode.name}
-                        onInputChange={e => { props.methode.name = e.currentTarget.value; setMethodeNameNotEmpty(props.methode.name !== ""); props.update() }} />
+                        onInputChange={onMethodeNameInputChanged} />
                     <CheckBox
                         id={`static-methode-${props.index}`}
                         title="Static"
                         value={props.methode.isStatic}
-                        onChanges={e => { props.methode.isStatic = e.currentTarget.checked; props.update(); }} />
+                        onChanges={onStaticPropertyStateChanged} />
                     <UMLAccessModifiersContainer
                         id={`methode-${props.index}`}
                         initValue={props.methode.accessModifier}
-                        onChange={(mod: AccessModifiers) => { props.methode.accessModifier = mod; props.update(); }} />
+                        onChange={(mod: UMLAccessModifiers) => { props.methode.accessModifier = mod; startUpdateView(); }} />
                     <SmallLabel title="Parameters" />
                     <Button title='Add parameter' onclick={() => props.onPushParameter()} />
                     <div class="flex flex-col p-1 rounded border border-sky-400">
@@ -94,13 +99,13 @@ export const UMLMethodeContainer: ParentComponent<{
                     </div>
                     <Field title="Return type"
                         initValue={props.methode.returnType}
-                        onInputChange={e => { props.methode.returnType = e.currentTarget.value; props.update() }} />
+                        onInputChange={onReturnTypeInputChanged} />
                     <button class="
                         py-1 w-full rounded mb-1 
                         border border-gray-200 
                         text-sm font-medium text-gray-700 
                         hover:bg-red-500 hover:text-white hover:shadow"
-                        onClick={e => props.delete()}>
+                        onClick={() => props.delete()}>
                         Delete
                     </button>
                 </div>

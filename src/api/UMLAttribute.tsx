@@ -1,13 +1,13 @@
-import { Component, createSignal, JSX, Show } from "solid-js";
+import { Component, createSignal, Show } from "solid-js";
 import { CheckBox } from "./CheckBox";
 import { Field } from "./Field";
 import { StringBuilder } from "./StringBuilder";
-import { AccessModifiers, IUMLAccessModifiers, UMLAccessModifiersContainer } from "./UMLAccessModifiers";
+import { UMLAccessModifiers, IUMLAccessModifiers, UMLAccessModifiersContainer } from "./UMLAccessModifiers";
 
 export interface IUmlAttribute extends IUMLAccessModifiers {
     isStatic?: boolean;
     isConstant?: boolean;
-    accessModifier?: AccessModifiers;
+    accessModifier?: UMLAccessModifiers;
     name: string;
     type?: string;
     multiplicity?: number;
@@ -18,7 +18,7 @@ export interface IUmlAttribute extends IUMLAccessModifiers {
 export class UMLAttribute implements IUmlAttribute {
     isStatic?: boolean;
     isConstant?: boolean;
-    accessModifier?: AccessModifiers;
+    accessModifier?: UMLAccessModifiers;
     name: string;
     type?: string;
     multiplicity?: number;
@@ -47,22 +47,14 @@ export class UMLAttribute implements IUmlAttribute {
 export const UMLAttributeContainer: Component<{
     index: number,
     attr: UMLAttribute,
-    onDrop: JSX.EventHandlerUnion<HTMLDivElement, DragEvent>,
     delete: Function,
     update: Function,
 }> = (props) => {
     const [isExpanded, setExpanded] = createSignal<boolean>();
     const [isAttributeNameNotEmpty, setAttributeNameNotEmpty] = createSignal<boolean>(props.attr.name !== "");
 
-    function onDragStart(e:DragEvent) { 
-        e.dataTransfer.setData("number", props.index.toString());
-    }   
-
     return (
-        <div draggable={true} 
-            onDrop={props.onDrop} 
-            onDragOver={e => e.preventDefault()} 
-            onDragStart={onDragStart} 
+        <div
             class={`relative flex flex-row bg-white rounded border ${isAttributeNameNotEmpty() ? "border-sky-400" : "border-red-400"} p-2 mb-2 shadow`}>
             <Show when={isExpanded()}>
                 <div class="flex flex-col">

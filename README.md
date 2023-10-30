@@ -36,8 +36,80 @@ You can deploy the `dist` folder to any static host provider (netlify, surge, no
 
 ## Tasks 
 - [ ] Web RTC
-- [ ] Derive line/arrow improvment
-  - [ ] Config
-  - [ ] Arrow rotation
-  - [ ] etc.
-- [ ] Derives searchbar
+  - [ ] TeamChat
+    - [ ] UI
+    - [ ] Function
+      - [ ] Send message
+      - [ ] Receive message
+  - [ ] User Management
+    - [ ] UI
+    - [ ] Function
+      - [ ] Kick
+      - [ ] Invite
+      - [ ] Block
+- [ ] Canvas
+  - [ ] Zoom funktion
+    - [ ] Idee: based on font size maybe  
+- [x] Relationship
+  - [ ] FIX Delete Relationship
+  - [x] Line/Arrow improvment
+  - [ ] Line Selection improvements
+  - [x] Slim Derive save (only uuid)
+  - [ ] Config 
+    - [ ] Association
+      - [ ] UI
+      - [x] Arrow draw
+    - [ ] Directional association
+      - [ ] UI
+      - [x] Arrow draw
+    - [ ] Bidirectional association
+      - [ ] UI
+      - [x] Arrow draw
+    - [ ] Composition
+      - [ ] UI
+      - [x] Arrow draw
+    - [ ] Aggregation
+      - [ ] UI
+      - [x] Arrow draw
+    - [ ] Usage
+      - [ ] UI
+      - [x] Arrow draw
+    - [ ] Subsitution
+      - [ ] Arrow draw
+      - [x] UI
+    - [ ] Abstraction
+      - [ ] Arrow draw
+      - [x] UI
+    - [ ] Dependency
+      - [ ] Arrow draw
+      - [X] UI
+    - [ ] Information Flow
+      - [ ] Arrow draw
+      - [X] UI 
+    - [ ] Containment
+      - [ ] Arrow draw
+      - [X] UI
+    - [ ] Realization
+      - [ ] Arrow draw
+      - [x] UI
+    - [ ] Generalization
+      - [ ] Arrow draw
+      - [X] UI
+  - [x] Arrow rotation
+- [x] Relationship searchbar
+  -  Yes, but with filter
+- [ ] auto formatting
+  - [ ] Up-Down formatting
+  - [ ] Down-Up formatting
+  - [ ] Left-Right formatting
+  - [ ] Right-Left formatting
+- [ ] Group Selection
+  - [x] Visiable selection area
+  - [ ] Marking selected classes
+  - [ ] Moving
+- [ ] Comment function 
+- [ ] Browser save
+
+
+## Idee
+- Replace the derive-meu to connection-menu with connection type (derive, use, ... ) selection option and config
