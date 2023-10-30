@@ -64,7 +64,7 @@ export const [store, setStore] = createStore<
     selectionMode: false,
     viewOffset: { x: 0, y: 0 },
     zoom: 1.0,
-    fontSize: 42,
+    fontSize: 18,
     rtc : {
       target: ""
     }

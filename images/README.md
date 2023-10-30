@@ -7,3 +7,5 @@
 ![](./preview05.png)
 ![](./preview06.png)
 ![](./preview07.png)
+### new feature from 30.10
+![](./preview08.png)
