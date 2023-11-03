@@ -137,10 +137,10 @@ export const UMLClassComponent : Component = () => {
     startUpdateView();
   }
 
-  function popRelationship(relationshipIndex: number) {
+  function popRelationship(relationShipUuid: string) {
     setStore(
       "relationships",
-      store.relationships.filter((_, i) => i !== (relationshipIndex+1)));
+      store.relationships.filter(x => x.uuid !== relationShipUuid));
 
     setSelectedClass(selectedClass());
     startUpdateView();

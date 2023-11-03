@@ -6,6 +6,7 @@ export const Button: Component<{
     onclick: JSX.EventHandlerUnion<HTMLButtonElement, MouseEvent> 
 }> = (props) => (
     <button class="
+            select-none
             py-1 w-full rounded mb-1 
             border border-gray-200 
             text-sm font-medium text-gray-700 

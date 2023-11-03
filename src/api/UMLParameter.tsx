@@ -35,7 +35,7 @@ export const UMLParameterContainer: Component<{
     param: UMLParameter,
     popParameter: Function,
 }> = (props) => {
-    const [isExpanded, setExpanded] = createSignal<boolean>(false);
+    const [isExpanded, setExpanded] = createSignal<boolean>(true);
     
     function onNameInputChanged(e) {
         props.param.name = e.currentTarget.value;

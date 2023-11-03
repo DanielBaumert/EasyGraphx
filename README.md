@@ -108,8 +108,10 @@ You can deploy the `dist` folder to any static host provider (netlify, surge, no
   - [ ] Marking selected classes
   - [ ] Moving
 - [ ] Comment function 
+- [ ] Namespaces
 - [ ] Browser save
 
 
 ## Idee
-- Replace the derive-meu to connection-menu with connection type (derive, use, ... ) selection option and config
+- [ ] Replace the derive-meu to connection-menu with connection type (derive, use, ... ) selection option and config
+- [ ] Include namespace selection for classes

@@ -2,12 +2,28 @@ export const HALF_CIRCLE = Math.PI
 export const FULL_CIRCLE = 2 * Math.PI
 
 export type Point = { 
-    x:number;
-    y:number;
+    x: number;
+    y: number;
 }
 
 export type TextDecoration = { 
-    underline:boolean
+    underline: boolean
+}
+
+export enum PolyLinePointMode { 
+    Relative,
+    Static
+}
+
+export type PolyLinePoint = { 
+    x: number;
+    y: number;
+    mode: PolyLinePointMode;
+}
+
+export type PolyLine = { 
+
+    points: Point[]
 }
 
 export function drawTextHCenter(

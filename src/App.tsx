@@ -1,6 +1,6 @@
 import { Component, children, onMount } from 'solid-js';
 import { ContextMenu, NavItem } from './api/ContextMenu';
-import { drawTextHCenter, measureText, drawRectangle, drawTextHLeft, SingleTextBlock, drawLine, fillTriangle, drawDotLine, FULL_CIRCLE, HALF_CIRCLE } from './api/DrawUtils';
+import { drawTextHCenter, measureText, drawRectangle, drawTextHLeft, SingleTextBlock, drawLine, fillTriangle, drawDotLine, FULL_CIRCLE, HALF_CIRCLE, drawNone } from './api/DrawUtils';
 import { Label } from './api/Label';
 import { UMLAttribute } from './api/UMLAttribute';
 import { UMLClass, UMLClassComponent, UMLEnum, UMLInterface } from './api/UMLClass';
@@ -13,6 +13,7 @@ import { onCanvasMouseDown, onCanvasMouseMove, onCanvasMouseUp } from './api/Mou
 import { canvas, Canvas } from './api/Canvas';
 import { Math2 } from './api/Math2';
 import { UMLArrowMode, UMLLineMode, UMLRelationship, UMLRelationshipType } from './api/UMLRelationship';
+
 // var exampleClass = new UMLClass();
 // exampleClass.isAbstract = true;
 // exampleClass.attributes.push(new UMLAttribute());
@@ -195,8 +196,8 @@ const App: Component = () => {
         let arrowSize = store.fontSize * .8;
         for (const relationships of store.relationships.filter(x => x.parent !== undefined)) {
           // calc vector
-          let lineMode = UMLLineMode[relationships.type];
-          let arrowMode = UMLArrowMode[relationships.type];
+          let lineMode = UMLLineMode[relationships.type] ?? drawNone;
+          let arrowMode = UMLArrowMode[relationships.type] ?? drawNone;
           let fillMode = relationships.type === UMLRelationshipType.composition 
             ? "black"
             : "white";
@@ -568,7 +569,6 @@ const App: Component = () => {
 
     fileLoader.click();
     fileLoader.remove();
-    
   }
 
   
