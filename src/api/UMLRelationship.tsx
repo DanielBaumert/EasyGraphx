@@ -102,11 +102,11 @@ export const UMLRelationshipContainer: ParentComponent<{
 
   function updateDropdown() {
     if (isExpanded()) {
-      dropDownName.style.minWidth = `${inputField.clientWidth}px`;
-      dropDownName.style.maxWidth = `${inputField.clientWidth}px`;
+      let bounce = inputField.getBoundingClientRect();
+      dropDownName.style.minWidth = `${bounce.width}px`;
+      dropDownName.style.maxWidth = `${bounce.width}px`;
       // calc position
-      let inputRect = inputField.getBoundingClientRect();
-      dropDownName.style.top = `calc(${inputRect.bottom}px + 0.25rem)`;
+      dropDownName.style.top = `calc(${bounce.bottom}px + 0.25rem)`;
     }
   }
 
@@ -123,9 +123,9 @@ export const UMLRelationshipContainer: ParentComponent<{
   function onDropItemClick(umlClass: UMLClass) {
     inputField.value = umlClass.name;
     props.relationship.parent = umlClass;
-
     setRelationshipParent(true);
     setClassFilter(umlClass.name);
+    
     setSelectedClass(selectedClass());
     startUpdateView();
   }
@@ -139,18 +139,21 @@ export const UMLRelationshipContainer: ParentComponent<{
     if(props.relationship.parent !== undefined) { 
       props.relationship.type = type;
       setRelationship(type);
+      setDropDownOpen(!isDropDownOpen());
       setSelectedClass(selectedClass());
       startUpdateView();
     }
   } 
 
   function onDropDownToggle(e: MouseEvent) { 
-    if(setDropDownOpen()){
-      dropDownType.style.minWidth = `${dropDownTypeContainer.clientWidth}px`;
-      dropDownType.style.maxWidth = `${dropDownTypeContainer.clientWidth}px`;
+    setDropDownOpen(!isDropDownOpen());
+    if(isDropDownOpen()){
+      let bounce = dropDownTypeContainer.getBoundingClientRect();
+      dropDownType.style.minWidth = `${bounce.width}px`;
+      dropDownType.style.maxWidth = `${bounce.width}px`;
+
+      dropDownType.style.top = `calc(${bounce.bottom}px + 0.25rem)`
     }
-    
-    setDropDownOpen(!isDropDownOpen())
   }
 
   const DropDownItem : ParentComponent<{
@@ -200,8 +203,8 @@ export const UMLRelationshipContainer: ParentComponent<{
             <div onclick={onDropDownToggle} class="border-l group hower:shadow hover:fill-red">
               <DropDownArrowIcon />
             </div>
-            <Show when={isDropDownOpen()} ref={dropDownType}>
-              <div class="z-20 fixed border-2 overflow-y-auto rounded bg-white py-1 shadow">
+            <Show when={isDropDownOpen()}>
+              <div class="z-20 fixed border-2 overflow-y-auto rounded bg-white py-1 shadow" ref={dropDownType}>
                 <DropDownItem onClick={e => updateRelationship(e, UMLRelationshipType.generalization)}>{UMLRelationshipType.generalization}</DropDownItem>
                 <DropDownItem onClick={e => updateRelationship(e, UMLRelationshipType.containment)}>{UMLRelationshipType.containment}</DropDownItem>
                 <DropDownItem onClick={e => updateRelationship(e, UMLRelationshipType.dependency)}>{UMLRelationshipType.dependency}</DropDownItem>
