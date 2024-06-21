@@ -34,7 +34,12 @@ export const [store, setStore] = createStore<
     fontSize: number,
     zoom: number,
     rtc : {
-      target: string
+      pc: RTCPeerConnection,
+      rmd: string,
+      ch: RTCDataChannel,
+      isChOpen: boolean,
+      remoteMouse: Point,
+      remoteView: Point
     }
   }>({
     classes: [],
@@ -66,7 +71,12 @@ export const [store, setStore] = createStore<
     zoom: 1.0,
     fontSize: 18,
     rtc : {
-      target: ""
+      pc: undefined,
+      rmd: undefined,
+      ch: undefined,
+      isChOpen: false,
+      remoteMouse: undefined,
+      remoteView: undefined
     }
 });
 
