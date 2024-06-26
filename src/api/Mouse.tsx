@@ -1,14 +1,30 @@
+import { ContextOpenMode } from "./ContextMenu";
 import { Point } from "./DrawUtils";
 import { startUpdateView } from "./GlobalState";
 import { setSelectedClass, isContextMenuOpen, setContextMenuOpen, selectedClass, setLocationContextMenu } from "./Signals";
-import { setStore, store } from "./Store";
+import { internalStore, setStore, store } from "./Store";
 import { UMLClass } from "./UMLClass";
 
 // https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/buttons
 export enum MouseButtons {
   PrimaryButton = 1,
-  SecondaryButton = 2
+  SecondaryButton = 2,
+  PrimaryAndSecondary = PrimaryButton | SecondaryButton
 }
+
+function isPrimaryButtonPressed(e: MouseEvent) : boolean
+{
+  return (e.buttons & MouseButtons.PrimaryButton) === MouseButtons.PrimaryButton;
+}
+
+function isSecondaryButtonPressed(e: MouseEvent) : boolean { 
+  return (e.buttons & MouseButtons.SecondaryButton) === MouseButtons.SecondaryButton;
+}
+
+function isPrimaryAndSecondaryButtonPressed(e: MouseEvent) : boolean { 
+  return (e.buttons & MouseButtons.PrimaryAndSecondary) === MouseButtons.PrimaryAndSecondary;
+}
+
 
 export function onCanvasMouseDown(e: MouseEvent) {
   setSelectedClass(null);
@@ -16,8 +32,14 @@ export function onCanvasMouseDown(e: MouseEvent) {
     setContextMenuOpen(false);
   }
 
+  if((e.buttons & MouseButtons.PrimaryAndSecondary) === MouseButtons.PrimaryAndSecondary) {
+    updateReadyToMove(false);
+    return;
+  }
+
+
   if ((e.buttons & MouseButtons.PrimaryButton) === MouseButtons.PrimaryButton) {
-    setStore("mouse", { x: e.x, y: e.y });
+    internalStore.mouseInfo.mousePrimary = { x: e.x, y: e.y };
     var umlClass = findClassAt(e);
     if (umlClass) {
       updateReadyToMove(true);
@@ -33,21 +55,29 @@ export function onCanvasMouseDown(e: MouseEvent) {
   }
 
   if ((e.buttons & MouseButtons.SecondaryButton) === MouseButtons.SecondaryButton) {
-    setStore("mouseSecondary", { x: e.x, y: e.y });
+    internalStore.mouseInfo.mouseSecondary =  { x: e.x, y: e.y };
     setContextMenuOpen(false);
   }
 }
 
+function isClassFoundOnMouse(umlClass: UMLClass) : boolean { 
+  return umlClass !== null;
+}
+
+function isCurrentlyOverAClass() : boolean {
+  return store.hoverClass === null;
+}
+
+
 export function onCanvasMouseMove(e: MouseEvent) {
-  let newHoverClass = findClassAt(e);
-  if (newHoverClass === null
-    && store.hoverClass !== null) {
+  let newHoverClass : UMLClass = findClassAt(e);
+  if (!isClassFoundOnMouse(newHoverClass) && !isCurrentlyOverAClass()) {
     // no class below the mouse is found
     // but the store store have a class
     setStore("hoverClass", null); // reset
     //style["cursor"] = "default"
     startUpdateView();
-  } else if (newHoverClass !== null) {
+  } else if (isClassFoundOnMouse(newHoverClass)) {
     // a class below the mouse is found
     if (store.hoverClass?.uuid !== newHoverClass.uuid) {
       // is the curret newHoverClass not the same below the mouse
@@ -77,41 +107,48 @@ export function onCanvasMouseMove(e: MouseEvent) {
     }
   }
 
-  if ((e.buttons & MouseButtons.PrimaryButton) === MouseButtons.PrimaryButton) {
-    // primary mouse button is pressed
-    if (selectedClass() && store.readyToMove) {
-      // If the primary button fell on a class while pressed
-      const gridSnap = (store.grid.space / (1 + store.grid.subCount)) * store.zoom;
 
-      const deltaX = (e.x - store.selectedClassOffset.x) * (1 / store.zoom);
-      const deltaY = (e.y - store.selectedClassOffset.y) * (1 / store.zoom);
+  if(!isPrimaryAndSecondaryButtonPressed(e)) {
+    if (isPrimaryButtonPressed(e)) {
+      // primary mouse button is pressed
+      if (selectedClass() && store.readyToMove) {
+        // If the primary button fell on a class while pressed
+        const gridSnap = (internalStore.gridInfo.space / (1 + internalStore.gridInfo.subCount)) * store.zoom;
 
-      selectedClass().x = Math.floor((deltaX) / gridSnap) * gridSnap;
-      selectedClass().y = Math.floor((deltaY) / gridSnap) * gridSnap;
+        const deltaX = (e.x - store.selectedClassOffset.x) * (1 / store.zoom);
+        const deltaY = (e.y - store.selectedClassOffset.y) * (1 / store.zoom);
 
-      setSelectedClass(selectedClass());
-      startUpdateView();
-    } else {
-      // if the primary button goes down on a class
-      setStore(
-        "viewOffset",
-        {
-          x: store.viewOffset.x + (e.x - store.mouse.x),
-          y: store.viewOffset.y + (e.y - store.mouse.y)
+        selectedClass().x = Math.floor((deltaX) / gridSnap) * gridSnap;
+        selectedClass().y = Math.floor((deltaY) / gridSnap) * gridSnap;
+
+        setSelectedClass(selectedClass());
+        startUpdateView();
+      } else {
+        // if the primary button goes down on a class
+        setStore("viewOffset", {
+          x: store.viewOffset.x + (e.x - internalStore.mouseInfo.lastEvent.x),
+          y: store.viewOffset.y + (e.y - internalStore.mouseInfo.lastEvent.y)
         });
+        startUpdateView();
+      }
+    }
+
+    if (isSecondaryButtonPressed(e)) {
+      setStore("selectionMode", true);
       startUpdateView();
     }
-  }
-
-  if ((e.buttons & MouseButtons.SecondaryButton) === MouseButtons.SecondaryButton) {
-    setStore("selectionMode", true);
+  } else { 
+    // primary and secondary button is pressed
+    setSelectedClass(null);
     startUpdateView();
   }
 
-  setStore("mouse", e);
+  internalStore.mouseInfo.lastEvent = e;
 }
 
+
 export function onCanvasMouseUp(e: MouseEvent) {
+  
   if ((e.button & MouseButtons.SecondaryButton) === MouseButtons.SecondaryButton) {
     if (selectedClass() && store.readyToMove) {
       updateReadyToMove(false);
@@ -121,22 +158,30 @@ export function onCanvasMouseUp(e: MouseEvent) {
     if (store.selectionMode) {
       // Disable selection
       setStore("selectionMode", false);
-      // 
       startUpdateView();
     } else {
       // show context menu
       var umlClass = findClassAt(e);
       setSelectedClass(umlClass);
-      setLocationContextMenu(e);
-      setContextMenuOpen(true);
+      if(internalStore.contextMenuRef){ 
+        setContextMenuOpen(true);
+        const contextMenuHeight = internalStore.contextMenuRef.clientHeight;
+        if(e.y + contextMenuHeight > window.innerHeight) {
+          internalStore.contextMenuOpenMode = ContextOpenMode.Bottom2Top; 
+          setLocationContextMenu({ x: e.x, y: e.y - contextMenuHeight });
+        } else { 
+          internalStore.contextMenuOpenMode = ContextOpenMode.Top2Bottom;
+          setLocationContextMenu(e);
+        }
+      }
     }
   }
 }
 
 
 function findClassAt(position: Point): UMLClass {
-  for (var i = store.classes.length - 1; i >= 0; i--) {
-    const umlClass = store.classes[i];
+  for (var i = internalStore.classes.length - 1; i >= 0; i--) {
+    const umlClass = internalStore.classes[i];
     const mouseViewX = position.x - store.viewOffset.x;
     const mouseViewY = position.y - store.viewOffset.y;
 

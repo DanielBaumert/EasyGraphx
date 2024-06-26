@@ -1,7 +1,7 @@
 import { Accessor, Component, For, JSX, ParentComponent, Show, createSignal } from "solid-js";
 import { UMLClass } from "./UMLClass";
 import { Label, SmallLabel } from "./Label";
-import { store } from "./Store";
+import { internalStore, store } from "./Store";
 import { selectedClass, setSelectedClass } from "./Signals";
 import { startUpdateView } from "./GlobalState";
 import { Radio } from "./CheckBox";
@@ -94,7 +94,6 @@ export const UMLRelationshipContainer: ParentComponent<{
   let dropDownTypeContainer : HTMLDivElement;
   let dropDownType: HTMLDivElement;
 
-
   function onExpanding() {
     setExpanded(!isExpanded());
     updateDropdown();
@@ -112,7 +111,7 @@ export const UMLRelationshipContainer: ParentComponent<{
 
   function onInputChange() {
     console.log("input changed");
-    props.relationship.parent = store.classes.find(x => x.name === inputField.value);
+    props.relationship.parent = internalStore.classes.find(x => x.name === inputField.value);
     
     setRelationshipParent(props.relationship.parent !== undefined);
     setClassFilter(inputField.value);
@@ -182,7 +181,7 @@ export const UMLRelationshipContainer: ParentComponent<{
           <div id={this} ref={dropDownName} class="z-20 fixed border-2 overflow-y-auto rounded bg-white py-1 shadow max-h-64">
             <For each={(() => {
               let filter = classFilter();
-              return store.classes.filter(x => x.name.includes(filter))
+              return internalStore.classes.filter(x => x.name.includes(filter))
             })()}>
               {(umlClass, _) => {
                 return (<div class="w-full pl-1 py-1 select-none hover:bg-gradient-to-r hover:from-cyan-500 hover:to-blue-500 hover:text-white hover:shadow"

@@ -6,7 +6,7 @@ import { UMLAttribute } from './api/UMLAttribute';
 import { UMLClass, UMLClassComponent, UMLEnum, UMLInterface } from './api/UMLClass';
 import { UMLMethode } from './api/UMLMethode';
 import { UMLParameter } from './api/UMLParameter';
-import { setStore, store } from './api/Store';
+import { internalStore, setStore, store } from './api/Store';
 import { changingsObserved, endUpdateView, startUpdateView } from './api/GlobalState';
 import { selectedClass, setContextMenuOpen, locationContextMenu, isContextMenuOpen } from './api/Signals';
 import { onCanvasMouseDown, onCanvasMouseMove, onCanvasMouseUp } from './api/Mouse';
@@ -59,45 +59,45 @@ const App: Component = () => {
       ctx.imageSmoothingQuality = 'high';
       ctx.imageSmoothingEnabled = true;
 
-      ctx.fillStyle = store.grid.background;
+      ctx.fillStyle = internalStore.gridInfo.background;
       ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
-      const gridSize = store.grid.space * store.zoom;
-      const subGridSize = gridSize / (1 + store.grid.subCount);
+      const gridSize = internalStore.gridInfo.space * store.zoom;
+      const subGridSize = gridSize / (1 + internalStore.gridInfo.subCount);
 
       // Draw background
       {
         const xClusterShift = (store.viewOffset.x % gridSize);
         const yClusterShift = (store.viewOffset.y % gridSize);
 
-        if (store.grid.subVisuale) {
+        if (internalStore.gridInfo.subVisuale) {
           for (var x = -gridSize + xClusterShift; x < canvas.width + gridSize;) {
-            drawLine(ctx, x, 0, x, canvas.height, 1, store.grid.color);
+            drawLine(ctx, x, 0, x, canvas.height, 1, internalStore.gridInfo.color);
 
-            for (var sx = 0; sx < store.grid.subCount; sx++) {
+            for (var sx = 0; sx < internalStore.gridInfo.subCount; sx++) {
               x += subGridSize;
-              drawLine(ctx, x, 0, x, canvas.height, 1, store.grid.subColor);
+              drawLine(ctx, x, 0, x, canvas.height, 1, internalStore.gridInfo.subColor);
             }
 
             x += subGridSize;
           }
 
           for (var y = -gridSize + yClusterShift; y < canvas.height + gridSize;) {
-            drawLine(ctx, 0, y, canvas.width, y, 1, store.grid.color);
+            drawLine(ctx, 0, y, canvas.width, y, 1, internalStore.gridInfo.color);
 
-            for (var sy = 0; sy < store.grid.subCount; sy++) {
+            for (var sy = 0; sy < internalStore.gridInfo.subCount; sy++) {
               y += subGridSize;
-              drawLine(ctx, 0, y, canvas.width, y, 1, store.grid.subColor);
+              drawLine(ctx, 0, y, canvas.width, y, 1, internalStore.gridInfo.subColor);
             }
 
             y += subGridSize;
           }
         } else {
           for (var x = 0 + xClusterShift; x < canvas.width; x += gridSize) {
-            drawLine(ctx, x, 0, x, canvas.height, 1, store.grid.color);
+            drawLine(ctx, x, 0, x, canvas.height, 1, internalStore.gridInfo.color);
           }
           for (var y = 0 + yClusterShift; y < canvas.height; y += gridSize) {
-            drawLine(ctx, 0, y, canvas.width, y, 1, store.grid.color);
+            drawLine(ctx, 0, y, canvas.width, y, 1, internalStore.gridInfo.color);
           }
         }
       }
@@ -107,7 +107,7 @@ const App: Component = () => {
         ctx.font = `${store.fontSize * store.zoom}px Arial`;
         const xPadding = 16 * store.zoom;
 
-        for (var umlClass of store.classes) {
+        for (var umlClass of internalStore.classes) {
           var titleSize = measureText(ctx, umlClass.toString());
           var attrSizes = umlClass.attributes?.map(x => {
             var measuredText = measureText(ctx, x.toString());
@@ -144,32 +144,32 @@ const App: Component = () => {
 
           if(umlClass.uuid === selectedClass()?.uuid) {
 
-            let borderColor = store.class.selectColor;
+            let borderColor = internalStore.classDrawInfo.selectColor;
             ctx.shadowColor = borderColor as string;
             ctx.shadowBlur = 7;
             
-            drawRectangle(ctx, xClassOffset, yClassOffset, maxBoxWidth, maxBoxHeight, borderColor, store.class.background);
+            drawRectangle(ctx, xClassOffset, yClassOffset, maxBoxWidth, maxBoxHeight, borderColor, internalStore.classDrawInfo.background);
             
             ctx.shadowBlur = 0;
           } else {
             
-            let borderColor = store.class.deselectColor;
-            drawRectangle(ctx, xClassOffset, yClassOffset, maxBoxWidth, maxBoxHeight, borderColor, store.class.background);
+            let borderColor = internalStore.classDrawInfo.deselectColor;
+            drawRectangle(ctx, xClassOffset, yClassOffset, maxBoxWidth, maxBoxHeight, borderColor, internalStore.classDrawInfo.background);
           
           }
             
 
           // draw heder 
-          //drawRectangle(ctx, xClassOffset, yClassOffset, maxBoxWidth, maxHeaderBoxSize, borderColor, store.class.background);
-          drawTextHCenter(ctx, xClassOffset, yClassOffset + (xPadding / 4), maxBoxWidth, xPadding, titleSize, store.class.fontColor);
+          //drawRectangle(ctx, xClassOffset, yClassOffset, maxBoxWidth, maxHeaderBoxSize, borderColor, internalStore.classDrawInfo.background);
+          drawTextHCenter(ctx, xClassOffset, yClassOffset + (xPadding / 4), maxBoxWidth, xPadding, titleSize, internalStore.classDrawInfo.fontColor);
 
           // draw attributes
           var yOffset = yClassOffset + maxHeaderBoxSize;
           drawLine(ctx, xClassOffset, yOffset, xClassOffset + maxBoxWidth, yOffset, 1, "black");
           yOffset += linePadding;
-          //drawRectangle(ctx, xClassOffset, yOffset, maxBoxWidth, maxAttrBoxHeight, borderColor, store.class.background);
+          //drawRectangle(ctx, xClassOffset, yOffset, maxBoxWidth, maxAttrBoxHeight, borderColor, internalStore.classDrawInfo.background);
           for (var attr of attrSizes) {
-            drawTextHLeft(ctx, xClassOffset, yOffset, xPadding, attr, store.class.fontColor);
+            drawTextHLeft(ctx, xClassOffset, yOffset, xPadding, attr, internalStore.classDrawInfo.fontColor);
             yOffset += attr.height;
           }
 
@@ -178,9 +178,9 @@ const App: Component = () => {
           yOffset += linePadding;
           drawLine(ctx, xClassOffset, yOffset, xClassOffset + maxBoxWidth, yOffset, 1,"black");
           yOffset += linePadding;
-          //drawRectangle(ctx, xClassOffset, yOffset, maxBoxWidth, maxMethBoxHeight, borderColor, store.class.background);
+          //drawRectangle(ctx, xClassOffset, yOffset, maxBoxWidth, maxMethBoxHeight, borderColor, internalStore.classDrawInfo.background);
           for (var meth of methSizes) {
-            drawTextHLeft(ctx, xClassOffset, yOffset, xPadding, meth, store.class.fontColor);
+            drawTextHLeft(ctx, xClassOffset, yOffset, xPadding, meth, internalStore.classDrawInfo.fontColor);
             yOffset += meth.height;
           }
 
@@ -190,11 +190,10 @@ const App: Component = () => {
           ctx.shadowBlur = 0;
         }
       }
-
       // Draw connections
       {
         let arrowSize = store.fontSize * .8;
-        for (const relationships of store.relationships.filter(x => x.parent !== undefined)) {
+        for (const relationships of internalStore.relationships.filter(x => x.parent !== undefined)) {
           // calc vector
           let lineMode = UMLLineMode[relationships.type] ?? drawNone;
           let arrowMode = UMLArrowMode[relationships.type] ?? drawNone;
@@ -309,13 +308,12 @@ const App: Component = () => {
         //     "green");
         // }
       }
-
       // draw multi selection area
       {
         if(store.selectionMode){ 
-          let dx = store.mouse.x - store.mouseSecondary.x;
-          let dy = store.mouse.y - store.mouseSecondary.y;
-          drawRectangle(ctx, store.mouseSecondary.x, store.mouseSecondary.y, dx, dy, "blue", "rgba(0,0,255,0.3)");
+          let dx = internalStore.mouseInfo.lastEvent.x - internalStore.mouseInfo.mouseSecondary.x;
+          let dy = internalStore.mouseInfo.lastEvent.y - internalStore.mouseInfo.mouseSecondary.y;
+          drawRectangle(ctx, internalStore.mouseInfo.mouseSecondary.x, internalStore.mouseInfo.mouseSecondary.y, dx, dy, "blue", "rgba(0,0,255,0.3)");
         }
       }
 
@@ -334,14 +332,11 @@ const App: Component = () => {
     x = (x - store.viewOffset.x) * zoomFacktor;
     y = (y - store.viewOffset.y) * zoomFacktor;
 
-    const gridSnap = (store.grid.space * store.zoom) / (1 + store.grid.subCount);
-    setStore(
-      "classes",
-      store.classes.length,
-      new UMLClass({
-        x: x - (x % gridSnap),
-        y: y - (y % gridSnap)
-      }));
+    const gridSnap = (internalStore.gridInfo.space * store.zoom) / (1 + internalStore.gridInfo.subCount);
+    internalStore.classes.push(new UMLClass({
+      x: x - (x % gridSnap),
+      y: y - (y % gridSnap)
+    }));
     startUpdateView();
   }
 
@@ -351,10 +346,9 @@ const App: Component = () => {
     x = (x - store.viewOffset.x) * zoomFacktor;
     y = (y - store.viewOffset.y) * zoomFacktor;
 
-    const gridSnap = (store.grid.space * store.zoom) / (1 + store.grid.subCount);
-    setStore(
-      "classes",
-      store.classes.length,
+    const gridSnap = (internalStore.gridInfo.space * store.zoom) / (1 + internalStore.gridInfo.subCount);
+
+    internalStore.classes.push(
       UMLInterface.Create({
         x: x - (x % gridSnap),
         y: y - (y % gridSnap)
@@ -368,29 +362,26 @@ const App: Component = () => {
     x = (x - store.viewOffset.x) * zoomFacktor;
     y = (y - store.viewOffset.y) * zoomFacktor;
 
-    const gridSnap = (store.grid.space * store.zoom) / (1 + store.grid.subCount);
-    setStore(
-      "classes",
-      store.classes.length,
+    const gridSnap = (internalStore.gridInfo.space * store.zoom) / (1 + internalStore.gridInfo.subCount);
+
+    internalStore.classes.push(
       UMLEnum.Create({
         x: x - (x % gridSnap),
         y: y - (y % gridSnap)
       }));
+
     startUpdateView();
   }
 
   function onContextMenuRemoveClass() {
     // remove class from store
-    setStore(
-      "classes",
-      store.classes.filter(x => x.uuid !== selectedClass().uuid));
+    internalStore.classes = internalStore.classes.filter(x => 
+      x.uuid !== selectedClass().uuid); // delete class by uuid
     
     // remove relationships from that class
-    setStore(
-      "relationships",
-      store.relationships.filter(x => 
-        x.parent.uuid !== selectedClass().uuid // delete all relationships to 
-        && x.children.uuid !== selectedClass().uuid)); // delete all relationships from
+    internalStore.relationships = internalStore.relationships.filter(x =>
+      x.parent.uuid !== selectedClass().uuid // delete all relationships to 
+      && x.children.uuid !== selectedClass().uuid); // delete all relationships from
 
     startUpdateView();
   }
@@ -409,7 +400,7 @@ const App: Component = () => {
     let startY = Number.MAX_VALUE;
     let endY = Number.MIN_VALUE;
 
-    for(let element of store.classes)
+    for(let element of internalStore.classes)
     {
       if(element.x < startX) { 
         startX = element.x;
@@ -466,8 +457,8 @@ const App: Component = () => {
     const link = document.createElement("a");
     var file = new Blob(
       [JSON.stringify({
-        classes: store.classes,
-        relationships: store.relationships.map(x => 
+        classes: internalStore.classes,
+        relationships: internalStore.relationships.map(x => 
         ({
           uuid: x.uuid,
           parent: x.parent?.uuid ?? undefined,
@@ -500,8 +491,8 @@ const App: Component = () => {
       var content = new TextDecoder("utf-8").decode(buffer);
       var jsonArray = JSON.parse(content);
 
-      setStore("classes", []);
-      setStore("relationships", []);
+      internalStore.classes = [];
+      internalStore.relationships = [];
 
       for (var element of jsonArray.classes) {
         const cls = new UMLClass({
@@ -548,20 +539,19 @@ const App: Component = () => {
           cls.methodes.push(meth);
         }
 
-        setStore(
-          "classes",
-          store.classes.length,
-          cls);
+        internalStore.classes.push(cls);
       }
       
       for (var element of jsonArray.relationships) {
-        let parent = store.classes.find(x => x.uuid === element.parent);
-        let children = store.classes.find(x => x.uuid === element.children);
-        
-        setStore(
-          "relationships",
-          store.relationships.length,
-          new UMLRelationship(children, parent, element["type"], element["uuid"]));
+        let parent = internalStore.classes.find(x => x.uuid === element.parent);
+        let children = internalStore.classes.find(x => x.uuid === element.children);
+
+        internalStore.relationships.push(
+          new UMLRelationship(
+            children, 
+            parent, 
+            element["type"],
+            element["uuid"]));
       }
       
       startUpdateView();

@@ -10,7 +10,7 @@ import { Button } from "./Button";
 import { CheckBox } from "./CheckBox";
 import { Field } from "./Field";
 import { Label } from "./Label";
-import { setStore, store } from "./Store";
+import { internalStore, setStore, store } from "./Store";
 import { UMLRelationship, UMLRelationshipContainer } from "./UMLRelationship";
 
 export enum UMLContextMenu { 
@@ -128,19 +128,18 @@ export const UMLClassComponent : Component = () => {
   }
 
   function pushRelationship() {
-    setStore(
-      "relationships",
-      store.relationships.length,
-      new UMLRelationship(selectedClass())
-    );
+    internalStore.relationships.push(
+      new UMLRelationship(
+        selectedClass()));
+    
     setSelectedClass(selectedClass());
     startUpdateView();
   }
 
   function popRelationship(relationShipUuid: string) {
-    setStore(
-      "relationships",
-      store.relationships.filter(x => x.uuid !== relationShipUuid));
+    internalStore.relationships = internalStore.relationships
+      .filter(x => 
+        x.uuid !== relationShipUuid);
 
     setSelectedClass(selectedClass());
     startUpdateView();
@@ -258,7 +257,7 @@ export const UMLClassComponent : Component = () => {
             <div id="meth-container" class="flex flex-col overflow-hidden max-h-max bg-white rounded-b border-x border-b border-sky-400 p-2 shadow">
               <Button title='Add Relationships' onclick={pushRelationship} />
               <div class="overflow-y-auto h-full">
-                  <For each={store.relationships.filter(x => x.children.uuid === selectedClass().uuid)}>
+                  <For each={internalStore.relationships.filter(x => x.children.uuid === selectedClass().uuid)}>
                     {(relationShip, iRelationship) => {
                       return <UMLRelationshipContainer
                         index={iRelationship()}

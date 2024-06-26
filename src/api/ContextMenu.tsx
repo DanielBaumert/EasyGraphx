@@ -1,5 +1,11 @@
-import { Component, createSignal, For, JSX, ParentComponent } from "solid-js";
+import { Component, createSignal, For, JSX, onMount, ParentComponent } from "solid-js";
 import { Point } from "./DrawUtils";
+import { internalStore } from "./Store";
+
+export enum ContextOpenMode { 
+    Top2Bottom,
+    Bottom2Top
+}
 
 export type ItemInfo = { 
     title: string,
@@ -30,6 +36,7 @@ export const ContextMenu : ParentComponent<{
             ${props.hidden ? 'hidden' : ''}
             fixed flex flex-col 
             min-w-230 z-10 shadow-md`} 
+            ref={internalStore.contextMenuRef}
             style={{
                 left: `${props.location?.x ?? 0}px`,
                 top: `${props.location?.y ?? 0}px`
