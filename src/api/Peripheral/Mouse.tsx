@@ -1,9 +1,9 @@
-import { ContextOpenMode } from "./ContextMenu";
-import { Point } from "./DrawUtils";
-import { startUpdateView } from "./GlobalState";
-import { setSelectedClass, isContextMenuOpen, setContextMenuOpen, selectedClass, setLocationContextMenu } from "./Signals";
-import { internalStore, setStore, store } from "./Store";
-import { UMLClass } from "./UMLClass";
+import { Point } from "../Drawing";
+import { startUpdateView } from "../GlobalState";
+import { setSelectedClass, setContextMenuOpen, isContextMenuOpen, selectedClass, setLocationContextMenu } from "../Signals";
+import { internalStore, setStore, store } from "../Store";
+import { ContextOpenMode } from "../UI";
+import { UMLClass } from "../UML";
 
 // https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/buttons
 export enum MouseButtons {
@@ -12,19 +12,41 @@ export enum MouseButtons {
   PrimaryAndSecondary = PrimaryButton | SecondaryButton
 }
 
-function isPrimaryButtonPressed(e: MouseEvent) : boolean
-{
+function isPrimaryButtonPressed(e: MouseEvent): boolean {
   return (e.buttons & MouseButtons.PrimaryButton) === MouseButtons.PrimaryButton;
 }
 
-function isSecondaryButtonPressed(e: MouseEvent) : boolean { 
+function isSecondaryButtonPressed(e: MouseEvent): boolean {
   return (e.buttons & MouseButtons.SecondaryButton) === MouseButtons.SecondaryButton;
 }
 
-function isPrimaryAndSecondaryButtonPressed(e: MouseEvent) : boolean { 
+function isPrimaryAndSecondaryButtonPressed(e: MouseEvent): boolean {
   return (e.buttons & MouseButtons.PrimaryAndSecondary) === MouseButtons.PrimaryAndSecondary;
 }
 
+
+function onPrimaryDown(e: MouseEvent) {
+  internalStore.mouseInfo.mousePrimary = e;
+  let umlClass = findClassAt(e);
+
+  if (umlClass) {
+    updateReadyToMove(true);
+    setSelectedClass(umlClass);
+    setStore(
+      "selectedClassOffset",
+      {
+        x: (e.x - umlClass.x),
+        y: (e.y - umlClass.y)
+      });
+    startUpdateView();
+  }
+}
+
+
+function onSecondaryDown(e: MouseEvent) {
+  internalStore.mouseInfo.mouseSecondary = e;
+  setContextMenuOpen(false);
+}
 
 export function onCanvasMouseDown(e: MouseEvent) {
   setSelectedClass(null);
@@ -32,45 +54,30 @@ export function onCanvasMouseDown(e: MouseEvent) {
     setContextMenuOpen(false);
   }
 
-  if((e.buttons & MouseButtons.PrimaryAndSecondary) === MouseButtons.PrimaryAndSecondary) {
-    updateReadyToMove(false);
-    return;
-  }
-
-
-  if ((e.buttons & MouseButtons.PrimaryButton) === MouseButtons.PrimaryButton) {
-    internalStore.mouseInfo.mousePrimary = { x: e.x, y: e.y };
-    var umlClass = findClassAt(e);
-    if (umlClass) {
-      updateReadyToMove(true);
-      setSelectedClass(umlClass);
-      setStore(
-        "selectedClassOffset",
-        {
-          x: (e.x - umlClass.x),
-          y: (e.y - umlClass.y)
-        });
-      startUpdateView();
-    }
-  }
-
-  if ((e.buttons & MouseButtons.SecondaryButton) === MouseButtons.SecondaryButton) {
-    internalStore.mouseInfo.mouseSecondary =  { x: e.x, y: e.y };
-    setContextMenuOpen(false);
+  switch (e.buttons & MouseButtons.PrimaryAndSecondary) {
+    case MouseButtons.PrimaryAndSecondary:
+      updateReadyToMove(false);
+      break;
+    case MouseButtons.PrimaryButton:
+      onPrimaryDown(e);
+      break;
+    case MouseButtons.SecondaryButton:
+      onSecondaryDown(e);
+      break;
   }
 }
 
-function isClassFoundOnMouse(umlClass: UMLClass) : boolean { 
+function isClassFoundOnMouse(umlClass: UMLClass): boolean {
   return umlClass !== null;
 }
 
-function isCurrentlyOverAClass() : boolean {
+function isCurrentlyOverAClass(): boolean {
   return store.hoverClass === null;
 }
 
 
 export function onCanvasMouseMove(e: MouseEvent) {
-  let newHoverClass : UMLClass = findClassAt(e);
+  let newHoverClass: UMLClass = findClassAt(e);
   if (!isClassFoundOnMouse(newHoverClass) && !isCurrentlyOverAClass()) {
     // no class below the mouse is found
     // but the store store have a class
@@ -108,7 +115,7 @@ export function onCanvasMouseMove(e: MouseEvent) {
   }
 
 
-  if(!isPrimaryAndSecondaryButtonPressed(e)) {
+  if (!isPrimaryAndSecondaryButtonPressed(e)) {
     if (isPrimaryButtonPressed(e)) {
       // primary mouse button is pressed
       if (selectedClass() && store.readyToMove) {
@@ -137,7 +144,7 @@ export function onCanvasMouseMove(e: MouseEvent) {
       setStore("selectionMode", true);
       startUpdateView();
     }
-  } else { 
+  } else {
     // primary and secondary button is pressed
     setSelectedClass(null);
     startUpdateView();
@@ -148,7 +155,7 @@ export function onCanvasMouseMove(e: MouseEvent) {
 
 
 export function onCanvasMouseUp(e: MouseEvent) {
-  
+
   if ((e.button & MouseButtons.SecondaryButton) === MouseButtons.SecondaryButton) {
     if (selectedClass() && store.readyToMove) {
       updateReadyToMove(false);
@@ -163,16 +170,26 @@ export function onCanvasMouseUp(e: MouseEvent) {
       // show context menu
       var umlClass = findClassAt(e);
       setSelectedClass(umlClass);
-      if(internalStore.contextMenuRef){ 
+      if (internalStore.contextMenuRef) {
         setContextMenuOpen(true);
+
         const contextMenuHeight = internalStore.contextMenuRef.clientHeight;
-        if(e.y + contextMenuHeight > window.innerHeight) {
-          internalStore.contextMenuOpenMode = ContextOpenMode.Bottom2Top; 
-          setLocationContextMenu({ x: e.x, y: e.y - contextMenuHeight });
-        } else { 
-          internalStore.contextMenuOpenMode = ContextOpenMode.Top2Bottom;
-          setLocationContextMenu(e);
-        }
+        const contextMenuWidth = internalStore.contextMenuRef.clientWidth;
+        let location : Point = { x: e.x, y: e.y };
+
+        internalStore.contextMenuOpenMode = ContextOpenMode.Default;
+
+        if(location.x + contextMenuWidth > window.innerWidth) {
+          internalStore.contextMenuOpenMode |= ContextOpenMode.MirroredX;
+          location.x -= contextMenuWidth;
+        } 
+
+        if (location.y + contextMenuHeight > window.innerHeight) {
+          internalStore.contextMenuOpenMode |= ContextOpenMode.MirroredY;
+          location.y -= contextMenuHeight 
+        } 
+        
+        setLocationContextMenu(location);
       }
     }
   }

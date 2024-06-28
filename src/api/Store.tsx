@@ -2,7 +2,7 @@ import { createStore } from "solid-js/store";
 import { Point } from "./DrawUtils";
 import { UMLClass } from "./UMLClass";
 import { UMLRelationship } from "./UMLRelationship";
-import { ContextOpenMode } from "./ContextMenu";
+import { ContextOpenMode } from "./UI/ContextOpenMode";
 
 
 type GridInfo = {
@@ -37,7 +37,7 @@ type InternalStore = {
   classes: UMLClass[],
   relationships: UMLRelationship[],
   contextMenuRef?: HTMLDivElement,
-  contextMenuOpenMode?: ContextOpenMode
+  contextMenuOpenMode?: ContextOpenMode;
 };
 
 export let internalStore: InternalStore = {
@@ -65,7 +65,7 @@ export let internalStore: InternalStore = {
   classes: [],
   relationships: [],
   contextMenuRef: null,
-  contextMenuOpenMode: ContextOpenMode.Top2Bottom
+  contextMenuOpenMode: null
 };
 
 

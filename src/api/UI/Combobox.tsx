@@ -1,19 +1,19 @@
 import { For, Component, Show, createSignal } from "solid-js";
-import { store } from "./Store";
-import { selectedClass } from "./Signals";
+import { internalStore, store } from "../Store";
+import { selectedClass } from "../Signals";
 import { canvas } from "./Canvas";
 
-export const Comboxbox: Component<{
-  title: string
+const Comboxbox: Component<{
+  title: string;
 }> = (props) => {
-  let comboboxSearch : HTMLInputElement;
-  let comboboxContainer : HTMLDivElement;
-  let classList : HTMLUListElement;
+  let comboboxSearch: HTMLInputElement;
+  let comboboxContainer: HTMLDivElement;
+  let classList: HTMLUListElement;
 
   const [isExpanded, setIsExpaned] = createSignal<boolean>(false);
 
   return (<div class="relative" ref={comboboxContainer}>
-    <input 
+    <input
       ref={comboboxSearch}
       id={`combobox`}
       list=""
@@ -30,19 +30,19 @@ export const Comboxbox: Component<{
       peer-focus:scale-75 peer-focus:-translate-y-7">
       {props.title}
     </label>
-    <button 
+    <button
       id="combobox-button"
-      onClick={() =>{
-        setIsExpaned(!isExpanded())
-        if(classList.offsetTop + classList.clientHeight > canvas.height){
+      onClick={() => {
+        setIsExpaned(!isExpanded());
+        if (classList.offsetTop + classList.clientHeight > canvas.height) {
           classList.style.top = `${comboboxContainer.getBoundingClientRect().y - 8 - classList.clientHeight}px`;
-        } else { 
+        } else {
           classList.style.top = null;
         }
       }}
       class="px-2 flex right-0 bottom-0 top-0 absolute items-center"
       type="button">
-      
+
     </button>
     <Show when={isExpanded()}>
       <ul
@@ -55,16 +55,18 @@ export const Comboxbox: Component<{
           snap-start overflow-x-hidden h-auto
           max-h-96 my-1 list-none z-20 overflow-y-auto	bg-white"
         role="list">
-          <For each={store.classes}>
-            {(umlClass, iUmlClass) => { 
-               return (<li
-                class="py-0.5 border 
+        <For each={internalStore.classes}>
+          {(umlClass, iUmlClass) => {
+            return (<li
+              class="py-0.5 border 
                 w-full select-none px-2 
                 hover:bg-gradient-to-r hover:from-cyan-500 hover:to-blue-500 hover:text-white hover:shadow">{
-                umlClass.uuid === selectedClass().uuid ? selectedClass().name : umlClass.name}</li>)
-            }}
-          </For>
+                umlClass.uuid === selectedClass().uuid ? selectedClass().name : umlClass.name}</li>);
+          }}
+        </For>
       </ul>
     </Show>
   </div>);
 };
+
+export default Comboxbox;
