@@ -1,6 +1,7 @@
 import { createSignal } from "solid-js";
-import { Point } from "./DrawUtils";
-import { UMLClass, UMLContextMenu } from "./UMLClass";
+import { UMLClass } from "./UML";
+import { UMLContextMenu } from "./UML/UMLClass";
+import { Point } from "./Drawing";
 
 export const [isContextMenuOpen, setContextMenuOpen] = createSignal<boolean>(false, { equals: false });
 export const [selectedClass, setSelectedClass] = createSignal<UMLClass>(null, { equals: false });
