@@ -1,18 +1,16 @@
 import { Component, children, onMount } from 'solid-js';
-import { ContextMenu, NavItem } from './api/ContextMenu';
-import { drawTextHCenter, measureText, drawRectangle, drawTextHLeft, SingleTextBlock, drawLine, fillTriangle, drawDotLine, FULL_CIRCLE, HALF_CIRCLE, drawNone } from './api/DrawUtils';
-import { Label } from './api/Label';
-import { UMLAttribute } from './api/UMLAttribute';
-import { UMLClass, UMLClassComponent, UMLEnum, UMLInterface } from './api/UMLClass';
-import { UMLMethode } from './api/UMLMethode';
-import { UMLParameter } from './api/UMLParameter';
-import { setStore, store } from './api/Store';
+import { ContextMenu, ContextOpenMode, Label, NavItem } from './api/UI';
+import { drawTextHCenter, measureText, drawRectangle, drawTextHLeft, drawLine, HALF_CIRCLE, drawNone } from './api/Drawing/CanvasDrawing';
+import { internalStore, setStore, store } from './api/Store';
 import { changingsObserved, endUpdateView, startUpdateView } from './api/GlobalState';
 import { selectedClass, setContextMenuOpen, locationContextMenu, isContextMenuOpen } from './api/Signals';
-import { onCanvasMouseDown, onCanvasMouseMove, onCanvasMouseUp } from './api/Mouse';
-import { canvas, Canvas } from './api/Canvas';
+import { onCanvasMouseDown, onCanvasMouseMove, onCanvasMouseUp } from './api/Peripheral/Mouse';
 import { Math2 } from './api/Math2';
-import { UMLArrowMode, UMLLineMode, UMLRelationship, UMLRelationshipType } from './api/UMLRelationship';
+import Canvas, { canvas } from './api/UI/Canvas';
+import { UMLArrowMode, UMLAttribute, UMLClass, UMLEnum, UMLInterface, UMLLineMode, UMLMethode, UMLRelationshipType, UmlToString } from './api/UML';
+import { UMLClassComponent } from './api/UML/UMLClass';
+import { Point } from './api/Drawing';
+import { deserialize, serialize } from './api/IO/Serialization';
 
 // var exampleClass = new UMLClass();
 // exampleClass.isAbstract = true;
@@ -29,7 +27,7 @@ import { UMLArrowMode, UMLLineMode, UMLRelationship, UMLRelationshipType } from 
 
 
 const App: Component = () => {
-  
+
   let frameNumber: number;
   let ctx: CanvasRenderingContext2D;
 
@@ -42,7 +40,7 @@ const App: Component = () => {
 
     window.addEventListener("click", () => {
       // close the context menu by any click in the view
-      if(isContextMenuOpen()){
+      if (isContextMenuOpen()) {
         setContextMenuOpen(false);
       }
     });
@@ -51,7 +49,7 @@ const App: Component = () => {
     canvas.height = window.innerHeight;
     ctx = canvas.getContext("2d");
     ctx.translate(0.5, 0.5);
-     requestAnimationFrame(() => render(ctx));
+    requestAnimationFrame(() => render(ctx));
   });
 
   function render(ctx: CanvasRenderingContext2D) {
@@ -59,66 +57,66 @@ const App: Component = () => {
       ctx.imageSmoothingQuality = 'high';
       ctx.imageSmoothingEnabled = true;
 
-      ctx.fillStyle = store.grid.background;
+      ctx.fillStyle = internalStore.gridInfo.background;
       ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
-      const gridSize = store.grid.space * store.zoom;
-      const subGridSize = gridSize / (1 + store.grid.subCount);
+      const gridSize = internalStore.gridInfo.space * store.zoom;
+      const subGridSize = gridSize / (1 + internalStore.gridInfo.subCount);
 
       // Draw background
       {
         const xClusterShift = (store.viewOffset.x % gridSize);
         const yClusterShift = (store.viewOffset.y % gridSize);
 
-        if (store.grid.subVisuale) {
+        if (internalStore.gridInfo.subVisuale) {
           for (var x = -gridSize + xClusterShift; x < canvas.width + gridSize;) {
-            drawLine(ctx, x, 0, x, canvas.height, 1, store.grid.color);
+            drawLine(ctx, x, 0, x, canvas.height, 1, internalStore.gridInfo.color);
 
-            for (var sx = 0; sx < store.grid.subCount; sx++) {
+            for (var sx = 0; sx < internalStore.gridInfo.subCount; sx++) {
               x += subGridSize;
-              drawLine(ctx, x, 0, x, canvas.height, 1, store.grid.subColor);
+              drawLine(ctx, x, 0, x, canvas.height, 1, internalStore.gridInfo.subColor);
             }
 
             x += subGridSize;
           }
 
           for (var y = -gridSize + yClusterShift; y < canvas.height + gridSize;) {
-            drawLine(ctx, 0, y, canvas.width, y, 1, store.grid.color);
+            drawLine(ctx, 0, y, canvas.width, y, 1, internalStore.gridInfo.color);
 
-            for (var sy = 0; sy < store.grid.subCount; sy++) {
+            for (var sy = 0; sy < internalStore.gridInfo.subCount; sy++) {
               y += subGridSize;
-              drawLine(ctx, 0, y, canvas.width, y, 1, store.grid.subColor);
+              drawLine(ctx, 0, y, canvas.width, y, 1, internalStore.gridInfo.subColor);
             }
 
             y += subGridSize;
           }
         } else {
           for (var x = 0 + xClusterShift; x < canvas.width; x += gridSize) {
-            drawLine(ctx, x, 0, x, canvas.height, 1, store.grid.color);
+            drawLine(ctx, x, 0, x, canvas.height, 1, internalStore.gridInfo.color);
           }
           for (var y = 0 + yClusterShift; y < canvas.height; y += gridSize) {
-            drawLine(ctx, 0, y, canvas.width, y, 1, store.grid.color);
+            drawLine(ctx, 0, y, canvas.width, y, 1, internalStore.gridInfo.color);
           }
         }
       }
       // Draw classes
       {
-        const linePadding = 2
+        const linePadding = 2;
         ctx.font = `${store.fontSize * store.zoom}px Arial`;
         const xPadding = 16 * store.zoom;
 
-        for (var umlClass of store.classes) {
-          var titleSize = measureText(ctx, umlClass.toString());
-          var attrSizes = umlClass.attributes?.map(x => {
-            var measuredText = measureText(ctx, x.toString());
-            if (measuredText instanceof SingleTextBlock) {
+        for (var umlClass of internalStore.classes) {
+          var titleSize = measureText(ctx, UmlToString(umlClass));
+          var attrSizes = umlClass.attributes?.map((x : UMLAttribute)=> {
+            var measuredText = measureText(ctx, UmlToString(x));
+            if ('decoration' in measuredText ) {
               measuredText.decoration.underline = x.isStatic ?? false;
             }
             return measuredText;
           }) ?? [];
-          var methSizes = umlClass.methodes?.map(x => {
-            var measuredText = measureText(ctx, x.toString());
-            if (measuredText instanceof SingleTextBlock) {
+          var methSizes = umlClass.methodes?.map((x : UMLMethode) => {
+            var measuredText = measureText(ctx, UmlToString(x));
+            if ('decoration' in measuredText ) {
               measuredText.decoration.underline = x.isStatic ?? false;
             }
             return measuredText;
@@ -126,12 +124,12 @@ const App: Component = () => {
 
           var maxHeaderBoxSize = titleSize.height + (xPadding / 2);
           var widestElementValue = Math.max(
-              titleSize.width + xPadding,
-              ...methSizes?.map(x => x.width + xPadding),
-              ...attrSizes?.map(x => x.width + xPadding));
+            titleSize.width + xPadding,
+            ...methSizes?.map(x => x.width + xPadding),
+            ...attrSizes?.map(x => x.width + xPadding));
 
           var girdWidth = Math.ceil(widestElementValue / subGridSize);
-          var maxBoxWidth = 
+          var maxBoxWidth =
             (girdWidth % 2 === 0 ? girdWidth + 1 : girdWidth) * subGridSize - 1;
 
           var maxAttrBoxHeight = Math.max(attrSizes?.reduce((p, c) => p + c.height, 0), 10 * store.zoom);
@@ -142,45 +140,45 @@ const App: Component = () => {
 
           var maxBoxHeight = maxHeaderBoxSize + maxAttrBoxHeight + maxMethBoxHeight + (linePadding + linePadding + linePadding);
 
-          if(umlClass.uuid === selectedClass()?.uuid) {
+          if (umlClass.uuid === selectedClass()?.uuid) {
 
-            let borderColor = store.class.selectColor;
+            let borderColor = internalStore.classDrawInfo.selectColor;
             ctx.shadowColor = borderColor as string;
             ctx.shadowBlur = 7;
-            
-            drawRectangle(ctx, xClassOffset, yClassOffset, maxBoxWidth, maxBoxHeight, borderColor, store.class.background);
-            
+
+            drawRectangle(ctx, xClassOffset, yClassOffset, maxBoxWidth, maxBoxHeight, borderColor, internalStore.classDrawInfo.background);
+
             ctx.shadowBlur = 0;
           } else {
-            
-            let borderColor = store.class.deselectColor;
-            drawRectangle(ctx, xClassOffset, yClassOffset, maxBoxWidth, maxBoxHeight, borderColor, store.class.background);
-          
+
+            let borderColor = internalStore.classDrawInfo.deselectColor;
+            drawRectangle(ctx, xClassOffset, yClassOffset, maxBoxWidth, maxBoxHeight, borderColor, internalStore.classDrawInfo.background);
+
           }
-            
+
 
           // draw heder 
-          //drawRectangle(ctx, xClassOffset, yClassOffset, maxBoxWidth, maxHeaderBoxSize, borderColor, store.class.background);
-          drawTextHCenter(ctx, xClassOffset, yClassOffset + (xPadding / 4), maxBoxWidth, xPadding, titleSize, store.class.fontColor);
+          //drawRectangle(ctx, xClassOffset, yClassOffset, maxBoxWidth, maxHeaderBoxSize, borderColor, internalStore.classDrawInfo.background);
+          drawTextHCenter(ctx, xClassOffset, yClassOffset + (xPadding / 4), maxBoxWidth, xPadding, titleSize, internalStore.classDrawInfo.fontColor);
 
           // draw attributes
           var yOffset = yClassOffset + maxHeaderBoxSize;
           drawLine(ctx, xClassOffset, yOffset, xClassOffset + maxBoxWidth, yOffset, 1, "black");
           yOffset += linePadding;
-          //drawRectangle(ctx, xClassOffset, yOffset, maxBoxWidth, maxAttrBoxHeight, borderColor, store.class.background);
+          //drawRectangle(ctx, xClassOffset, yOffset, maxBoxWidth, maxAttrBoxHeight, borderColor, internalStore.classDrawInfo.background);
           for (var attr of attrSizes) {
-            drawTextHLeft(ctx, xClassOffset, yOffset, xPadding, attr, store.class.fontColor);
+            drawTextHLeft(ctx, xClassOffset, yOffset, xPadding, attr, internalStore.classDrawInfo.fontColor);
             yOffset += attr.height;
           }
 
           // draw methodes
           yOffset = yClassOffset + maxHeaderBoxSize + maxAttrBoxHeight;
           yOffset += linePadding;
-          drawLine(ctx, xClassOffset, yOffset, xClassOffset + maxBoxWidth, yOffset, 1,"black");
+          drawLine(ctx, xClassOffset, yOffset, xClassOffset + maxBoxWidth, yOffset, 1, "black");
           yOffset += linePadding;
-          //drawRectangle(ctx, xClassOffset, yOffset, maxBoxWidth, maxMethBoxHeight, borderColor, store.class.background);
+          //drawRectangle(ctx, xClassOffset, yOffset, maxBoxWidth, maxMethBoxHeight, borderColor, internalStore.classDrawInfo.background);
           for (var meth of methSizes) {
-            drawTextHLeft(ctx, xClassOffset, yOffset, xPadding, meth, store.class.fontColor);
+            drawTextHLeft(ctx, xClassOffset, yOffset, xPadding, meth, internalStore.classDrawInfo.fontColor);
             yOffset += meth.height;
           }
 
@@ -190,46 +188,45 @@ const App: Component = () => {
           ctx.shadowBlur = 0;
         }
       }
-
       // Draw connections
       {
         let arrowSize = store.fontSize * .8;
-        for (const relationships of store.relationships.filter(x => x.parent !== undefined)) {
+        for (const relationships of internalStore.relationships.filter(x => x.parent !== undefined)) {
           // calc vector
           let lineMode = UMLLineMode[relationships.type] ?? drawNone;
           let arrowMode = UMLArrowMode[relationships.type] ?? drawNone;
-          let fillMode = relationships.type === UMLRelationshipType.composition 
+          let fillMode = relationships.type === UMLRelationshipType.composition
             ? "black"
             : "white";
 
           let dx = relationships.children.x - relationships.parent.x;
           let dy = relationships.children.y - relationships.parent.y;
           let m = Math.atan(dy / dx);
-          
-          if(-Math2.RAD45 < m && m < Math2.RAD45) { 
+
+          if (-Math2.RAD45 < m && m < Math2.RAD45) {
             // LR
-            if(relationships.parent.x < relationships.children.x) {
+            if (relationships.parent.x < relationships.children.x) {
               // parent left
               let srcx = store.viewOffset.x + relationships.parent.x + relationships.parent.width;
               let srcy = store.viewOffset.y + relationships.parent.y + (relationships.parent.height * .5);
-  
+
               let dstx = store.viewOffset.x + relationships.children.x;
               let dsty = store.viewOffset.y + relationships.children.y + (relationships.children.height * .5);
-  
+
               let dx = dstx - srcx;
               let dy = dsty - srcy;
               let m = Math.atan(dy / dx);
-  
+
               lineMode(ctx, srcx, srcy, dstx, dsty, 1, "black");
-              if(arrowMode !== undefined){
+              if (arrowMode !== undefined) {
                 arrowMode(ctx, srcx, srcy, arrowSize, arrowSize, m, "black", fillMode);
               }
-              if(relationships.type === UMLRelationshipType.bidirectionalAssociation){
+              if (relationships.type === UMLRelationshipType.bidirectionalAssociation) {
                 arrowMode(ctx, dstx, dsty, arrowSize, arrowSize, m - HALF_CIRCLE, "black", fillMode);
               }
             } else {
               // parent right
-              let srcx = store.viewOffset.x + relationships.children.x +  relationships.children.width;
+              let srcx = store.viewOffset.x + relationships.children.x + relationships.children.width;
               let srcy = store.viewOffset.y + relationships.children.y + (relationships.children.height * .5);
 
               let dstx = store.viewOffset.x + relationships.parent.x;
@@ -240,14 +237,14 @@ const App: Component = () => {
               let m = Math.atan(dy / dx);
 
               lineMode(ctx, srcx, srcy, dstx, dsty, 1, "black");
-              if(arrowMode !== undefined){
+              if (arrowMode !== undefined) {
                 arrowMode(ctx, dstx, dsty, arrowSize, arrowSize, m + HALF_CIRCLE, "black", fillMode);
               }
-              if(relationships.type === UMLRelationshipType.bidirectionalAssociation){
+              if (relationships.type === UMLRelationshipType.bidirectionalAssociation) {
                 arrowMode(ctx, srcx, srcy, arrowSize, arrowSize, m, "black", fillMode);
               }
             }
-          } else if (relationships.parent.y < relationships.children.y) { 
+          } else if (relationships.parent.y < relationships.children.y) {
             // TB
             let srcx = store.viewOffset.x + relationships.parent.x + (relationships.parent.width * .5);
             let srcy = store.viewOffset.y + relationships.parent.y + relationships.parent.height;
@@ -259,17 +256,16 @@ const App: Component = () => {
             let dy = (dsty - srcy);
             let m = Math.atan(dy / dx);
 
-            if(m < 0)
-            {
-              m -= HALF_CIRCLE 
+            if (m < 0) {
+              m -= HALF_CIRCLE;
             }
 
 
             lineMode(ctx, srcx, srcy, dstx, dsty, 1, "black");
-            if(arrowMode !== undefined){
+            if (arrowMode !== undefined) {
               arrowMode(ctx, srcx, srcy, arrowSize, arrowSize, m, "black", fillMode);
             }
-            if(relationships.type === UMLRelationshipType.bidirectionalAssociation){
+            if (relationships.type === UMLRelationshipType.bidirectionalAssociation) {
               arrowMode(ctx, dstx, dsty, arrowSize, arrowSize, m + HALF_CIRCLE, "black", fillMode);
             }
           } else {
@@ -284,16 +280,15 @@ const App: Component = () => {
             let dy = (dsty - srcy);
             let m = Math.atan(dy / dx);
 
-            if(m > 0)
-            {
-              m -= HALF_CIRCLE 
+            if (m > 0) {
+              m -= HALF_CIRCLE;
             }
 
             lineMode(ctx, srcx, srcy, dstx, dsty, 1, "black");
-            if(arrowMode !== undefined){
+            if (arrowMode !== undefined) {
               arrowMode(ctx, dstx, dsty, arrowSize, arrowSize, m, "black", fillMode);
             }
-            if(relationships.type === UMLRelationshipType.bidirectionalAssociation){
+            if (relationships.type === UMLRelationshipType.bidirectionalAssociation) {
               arrowMode(ctx, srcx, srcy, arrowSize, arrowSize, m + HALF_CIRCLE, "black", fillMode);
             }
           }
@@ -309,13 +304,12 @@ const App: Component = () => {
         //     "green");
         // }
       }
-
       // draw multi selection area
       {
-        if(store.selectionMode){ 
-          let dx = store.mouse.x - store.mouseSecondary.x;
-          let dy = store.mouse.y - store.mouseSecondary.y;
-          drawRectangle(ctx, store.mouseSecondary.x, store.mouseSecondary.y, dx, dy, "blue", "rgba(0,0,255,0.3)");
+        if (store.selectionMode) {
+          let dx = internalStore.mouseInfo.lastEvent.x - internalStore.mouseInfo.mouseSecondary.x;
+          let dy = internalStore.mouseInfo.lastEvent.y - internalStore.mouseInfo.mouseSecondary.y;
+          drawRectangle(ctx, internalStore.mouseInfo.mouseSecondary.x, internalStore.mouseInfo.mouseSecondary.y, dx, dy, "blue", "rgba(0,0,255,0.3)");
         }
       }
 
@@ -328,69 +322,61 @@ const App: Component = () => {
   /*
    * Context Menu
    */
-  function onContextMenuAddClass() {
-    const zoomFacktor = 1 / store.zoom;
-    let { x, y } = locationContextMenu();
-    x = (x - store.viewOffset.x) * zoomFacktor;
-    y = (y - store.viewOffset.y) * zoomFacktor;
 
-    const gridSnap = (store.grid.space * store.zoom) / (1 + store.grid.subCount);
-    setStore(
-      "classes",
-      store.classes.length,
-      new UMLClass({
-        x: x - (x % gridSnap),
-        y: y - (y % gridSnap)
-      }));
+  function getPlacementLocation(): Point {
+    const zoomFacktor = 1 / store.zoom;
+    const gridSnap = (internalStore.gridInfo.space * store.zoom) / (1 + internalStore.gridInfo.subCount);
+    const offsetX = internalStore.contextMenuRef.clientWidth;
+    const offsetY = internalStore.contextMenuRef.clientHeight;
+
+    let { x, y } = locationContextMenu();
+    x = ((x - store.viewOffset.x) * zoomFacktor) - (x % gridSnap);
+    y = ((y - store.viewOffset.y) * zoomFacktor) - (y % gridSnap);
+
+    if ((internalStore.contextMenuOpenMode & ContextOpenMode.MirroredX) === ContextOpenMode.MirroredX) {
+      x += offsetX;
+    }
+
+    if ((internalStore.contextMenuOpenMode & ContextOpenMode.MirroredY) === ContextOpenMode.MirroredY) {
+      y += offsetY;
+    }
+
+    return { x, y };
+  }
+
+  function onContextMenuAddClass() {
+    const placement = getPlacementLocation();
+    internalStore.classes.push(
+      new UMLClass(placement));
     startUpdateView();
   }
 
   function onContextMenuAddInterface() {
-    const zoomFacktor = 1 / store.zoom;
-    let { x, y } = locationContextMenu();
-    x = (x - store.viewOffset.x) * zoomFacktor;
-    y = (y - store.viewOffset.y) * zoomFacktor;
+    const placement = getPlacementLocation();
+    internalStore.classes.push(
+      UMLInterface.Create(placement));
 
-    const gridSnap = (store.grid.space * store.zoom) / (1 + store.grid.subCount);
-    setStore(
-      "classes",
-      store.classes.length,
-      UMLInterface.Create({
-        x: x - (x % gridSnap),
-        y: y - (y % gridSnap)
-      }));
     startUpdateView();
   }
 
   function onContextMenuAddEnum() {
-    const zoomFacktor = 1 / store.zoom;
-    let { x, y } = locationContextMenu();
-    x = (x - store.viewOffset.x) * zoomFacktor;
-    y = (y - store.viewOffset.y) * zoomFacktor;
+    const placement = getPlacementLocation();
+    internalStore.classes.push(
+      UMLEnum.Create(placement));
 
-    const gridSnap = (store.grid.space * store.zoom) / (1 + store.grid.subCount);
-    setStore(
-      "classes",
-      store.classes.length,
-      UMLEnum.Create({
-        x: x - (x % gridSnap),
-        y: y - (y % gridSnap)
-      }));
     startUpdateView();
   }
 
+
   function onContextMenuRemoveClass() {
     // remove class from store
-    setStore(
-      "classes",
-      store.classes.filter(x => x.uuid !== selectedClass().uuid));
-    
+    internalStore.classes = internalStore.classes.filter(x =>
+      x.uuid !== selectedClass().uuid); // delete class by uuid
+
     // remove relationships from that class
-    setStore(
-      "relationships",
-      store.relationships.filter(x => 
-        x.parent.uuid !== selectedClass().uuid // delete all relationships to 
-        && x.children.uuid !== selectedClass().uuid)); // delete all relationships from
+    internalStore.relationships = internalStore.relationships.filter(x =>
+      x.parent.uuid !== selectedClass().uuid // delete all relationships to 
+      && x.children.uuid !== selectedClass().uuid); // delete all relationships from
 
     startUpdateView();
   }
@@ -400,8 +386,8 @@ const App: Component = () => {
       width: curWidth,
       height: curHeight
     } = canvas;
-    
-    const {x: curX, y: curY} = store.viewOffset;
+
+    const { x: curX, y: curY } = store.viewOffset;
 
     let startX = Number.MAX_VALUE;
     let endX = Number.MIN_VALUE;
@@ -409,23 +395,22 @@ const App: Component = () => {
     let startY = Number.MAX_VALUE;
     let endY = Number.MIN_VALUE;
 
-    for(let element of store.classes)
-    {
-      if(element.x < startX) { 
+    for (let element of internalStore.classes) {
+      if (element.x < startX) {
         startX = element.x;
       }
-      
-      if(element.y < startY) { 
-        startY = element.y;
-      } 
 
-      if((element.x + element.width) > endX) {
+      if (element.y < startY) {
+        startY = element.y;
+      }
+
+      if ((element.x + element.width) > endX) {
         endX = (element.x + element.width);
-      }  
-      
-      if((element.y + element.height) > endY) {
+      }
+
+      if ((element.y + element.height) > endY) {
         endY = (element.y + element.height);
-      }  
+      }
     }
 
     let h = (endY - startY) + 1 /*class pixel */ + (2 * 8 /* padding*/);
@@ -434,14 +419,14 @@ const App: Component = () => {
     setStore(
       "viewOffset",
       {
-        x: -(startX - 8), 
+        x: -(startX - 8),
         y: -(startY - 8)
       });
 
     canvas.width = w;
     canvas.height = h;
 
-    startUpdateView(() => { 
+    startUpdateView(() => {
       const link = document.createElement("a");
       link.download = 'download.png';
       link.href = canvas.toDataURL();
@@ -450,14 +435,14 @@ const App: Component = () => {
 
       canvas.width = curWidth;
       canvas.height = curHeight;
-      
+
       setStore(
         "viewOffset",
         {
           x: curX,
           y: curY
         });
-      
+
       startUpdateView();
     });
   }
@@ -465,22 +450,14 @@ const App: Component = () => {
   function onContextMenuSaveState() {
     const link = document.createElement("a");
     var file = new Blob(
-      [JSON.stringify({
-        classes: store.classes,
-        relationships: store.relationships.map(x => 
-        ({
-          uuid: x.uuid,
-          parent: x.parent?.uuid ?? undefined,
-          children: x.children.uuid,
-          type: x.type,
-        }))
-      })],{ type: 'application/json;charset=utf-8' });
+      [ serialize(internalStore.classes[0]) ],
+      { type: 'application/json;charset=utf-8' });
     link.download = 'config.json';
     link.href = URL.createObjectURL(file);
     link.click();
     link.remove();
   }
-  
+
   function onContextMenuLoadState() {
     const fileLoader = document.createElement("input");
     fileLoader["type"] = "file";
@@ -498,85 +475,103 @@ const App: Component = () => {
       var file = fileLoader.files[0];
       var buffer = await file.arrayBuffer();
       var content = new TextDecoder("utf-8").decode(buffer);
-      var jsonArray = JSON.parse(content);
 
-      setStore("classes", []);
-      setStore("relationships", []);
+      internalStore.classes.push(deserialize(content) as UMLClass);
 
-      for (var element of jsonArray.classes) {
-        const cls = new UMLClass({
-          x: element["x"] ?? 0,
-          y: element["y"] ?? 0
-        });
-        cls.property = element["property"];
-        cls.uuid = element["uuid"];
-        cls.name = element["name"],
-        cls.width = element["width"];
-        cls.height = element["height"];
-        cls.isAbstract = element["isAbstract"] ?? false;
-        cls.attributes = [];
-        for (var attrElement of element["attributes"] ?? []) {
-          const attr: UMLAttribute = new UMLAttribute();
-          attr.isStatic = attrElement["isStatic"] ?? false;
-          attr.isConstant = attrElement["isConstant"] ?? false;
-          attr.accessModifier = attrElement["accessModifier"] ?? null;
-          attr.name = attrElement["name"];
-          attr.type = attrElement["type"] ?? null;
-          attr.multiplicity = attrElement["multiplicity"] ?? null;
-          attr.defaultValue = attrElement["defaultValue"] ?? null;
+    //   internalStore.classes = [];
+    //   internalStore.relationships = [];
 
-          cls.attributes.push(attr);
-        }
-        cls.methodes = [];
-        for (var methElement of element["methodes"] ?? []) {
-          const meth: UMLMethode = new UMLMethode();
+    //   for (var element of jsonArray.classes) {
+    //     // const cls = new UMLClass({
+    //     //   x: element["x"] ?? 0,
+    //     //   y: element["y"] ?? 0
+    //     // });
+    //     // cls.property = element["property"];
+    //     // cls.uuid = element["uuid"];
+    //     // cls.name = element["name"],
+    //     // cls.width = element["width"];
+    //     // cls.height = element["height"];
+    //     // cls.isAbstract = element["isAbstract"] ?? false;
+    //     // cls.attributes = [];
+    //     // for (var attrElement of element["attributes"] ?? []) {
+    //     //   const attr: UMLAttribute = new UMLAttribute();
+    //     //   attr.isStatic = attrElement["isStatic"] ?? false;
+    //     //   attr.isConstant = attrElement["isConstant"] ?? false;
+    //     //   attr.accessModifier = attrElement["accessModifier"] ?? null;
+    //     //   attr.name = attrElement["name"];
+    //     //   attr.type = attrElement["type"] ?? null;
+    //     //   attr.multiplicity = attrElement["multiplicity"] ?? null;
+    //     //   attr.defaultValue = attrElement["defaultValue"] ?? null;
 
-          meth.isStatic = methElement["isStatic"] ?? false;
-          meth.name = methElement["name"] ?? "methode";
-          meth.returnType = methElement["returnType"] ?? null;
-          meth.accessModifier = methElement["accessModifier"] ?? null;
-          meth.parameters = [];
+    //     //   cls.attributes.push(attr);
+    //     // }
+    //     // cls.methodes = [];
+    //     // for (var methElement of element["methodes"] ?? []) {
+    //     //   const meth: UMLMethode = new UMLMethode();
 
-          for (var paramElement of methElement['parameters'] ?? []) {
-            const param = new UMLParameter();
-            param.name = paramElement["name"] ?? null;
-            param.type = paramElement["type"] ?? null;
+    //     //   meth.isStatic = methElement["isStatic"] ?? false;
+    //     //   meth.name = methElement["name"] ?? "methode";
+    //     //   meth.returnType = methElement["returnType"] ?? null;
+    //     //   meth.accessModifier = methElement["accessModifier"] ?? null;
+    //     //   meth.parameters = [];
 
-            meth.parameters.push(param);
-          }
+    //     //   for (var paramElement of methElement['parameters'] ?? []) {
+    //     //     const param = new UMLParameter();
+    //     //     param.name = paramElement["name"] ?? null;
+    //     //     param.type = paramElement["type"] ?? null;
 
-          cls.methodes.push(meth);
-        }
+    //     //     meth.parameters.push(param);
+    //     //   }
 
-        setStore(
-          "classes",
-          store.classes.length,
-          cls);
-      }
-      
-      for (var element of jsonArray.relationships) {
-        let parent = store.classes.find(x => x.uuid === element.parent);
-        let children = store.classes.find(x => x.uuid === element.children);
-        
-        setStore(
-          "relationships",
-          store.relationships.length,
-          new UMLRelationship(children, parent, element["type"], element["uuid"]));
-      }
-      
-      startUpdateView();
+    //     //   cls.methodes.push(meth);
+    //     // }
+
+
+    // //     const attribues = [];
+    // //     for (var attr of element.attributes) {
+    // //       attribues.push(Object.assign(UMLAttribute, attr));
+    // //     }
+
+    // //     const methodes = [];
+    // //     for (var meth of element.methodes) {
+
+    // //       const parameters = [];
+    // //       for (var param of meth.parameters) {
+    // //         parameters.push(Object.assign(UMLParameter, param));
+    // //       }
+    // //       methodes.push(Object.assign(parameters), meth));
+    // //     }
+
+    // //     let cls = Object.assign(new UMLClass, element);
+
+    // //     internalStore.classes.push(cls);
+    // //   }
+
+    // //   for (var element of jsonArray.relationships) {
+    // //     let parent = internalStore.classes.find(x => x.uuid === element.parent);
+    // //     let children = internalStore.classes.find(x => x.uuid === element.children);
+
+    // //     internalStore.relationships.push(
+    // //       new UMLRelationship(
+    // //         children,
+    // //         parent,
+    // //         element["type"],
+    // //         element["uuid"]));
+    //   }
+
+       startUpdateView();
     });
 
     fileLoader.click();
     fileLoader.remove();
   }
 
-  
+
   /*
    * App
    */
   return (
-    <div 
+    <div
       class="relative min-h-screen max-h-screen">
       <ContextMenu
         hidden={!isContextMenuOpen()}
@@ -616,8 +611,8 @@ const App: Component = () => {
       </div> */}
       <UMLClassComponent />
       <div class='z-20 absolute bottom-4 left-4 flex flex-col'>
-        <Label title={`x: ${store.viewOffset.x}`}/>
-        <Label title={`y: ${store.viewOffset.y}`}/>
+        <Label title={`x: ${store.viewOffset.x}`} />
+        <Label title={`y: ${store.viewOffset.y}`} />
       </div>
 
     </div>

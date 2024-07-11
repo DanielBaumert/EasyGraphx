@@ -1,49 +1,7 @@
 import { Component, createSignal, Show } from "solid-js";
-import { CheckBox } from "./CheckBox";
-import { Field } from "./Field";
-import { StringBuilder } from "./StringBuilder";
-import { UMLAccessModifiers, IUMLAccessModifiers, UMLAccessModifiersContainer } from "./UMLAccessModifiers";
-import { DropDownArrowIcon } from "./Icons";
-
-export interface IUmlAttribute extends IUMLAccessModifiers {
-  isStatic?: boolean;
-  isConstant?: boolean;
-  accessModifier?: UMLAccessModifiers;
-  name: string;
-  type?: string;
-  multiplicity?: number;
-  defaultValue?: string;
-  toString(): string;
-}
-
-export class UMLAttribute implements IUmlAttribute {
-  isStatic?: boolean;
-  isConstant?: boolean;
-  accessModifier?: UMLAccessModifiers;
-  name: string;
-  type?: string;
-  multiplicity?: number;
-  defaultValue?: string;
-
-  constructor() {
-    this.name = "attribute";
-  }
-
-  toString(): string {
-    var sb = new StringBuilder();
-    if (this.accessModifier) {
-      sb.write(this.accessModifier).write(" ");
-    }
-    sb.write(this.isConstant ? this.name.toUpperCase() : this.name);
-    if (this.type) {
-      sb.write(':').write(this.type);
-    }
-    if (this.defaultValue) {
-      sb.write('=').write(this.defaultValue);
-    }
-    return sb.toString();
-  }
-}
+import { Checkbox, DropDownArrowIcon, Field } from "../UI";
+import { UMLAttribute } from ".";
+import { UMLAccessModifiersContainer } from "./UMLAccessModifiers";
 
 export const UMLAttributeContainer: Component<{
   index: number,
@@ -61,14 +19,14 @@ export const UMLAttributeContainer: Component<{
         <div class="flex flex-col">
           <Field title="Name"
             initValue={props.attr.name}
-            onInputChange={e => { props.attr.name = e.currentTarget.value; setAttributeNameNotEmpty(props.attr.name !== ""); props.update() }} />
+            onInputChange={e => { props.attr.name = e.currentTarget.value; setAttributeNameNotEmpty(props.attr.name !== ""); props.update(); }} />
           <div class="grid grid-cols-2">
-            <CheckBox
+            <Checkbox
               id={`static-attribute-${props.index}`}
               title="Static"
               value={props.attr.isStatic}
               onChanges={e => { props.attr.isStatic = e.currentTarget.checked; props.update(); }} />
-            <CheckBox
+            <Checkbox
               id={`constant-attribute-${props.index}`}
               title="Constant"
               value={props.attr.isConstant}
@@ -80,10 +38,10 @@ export const UMLAttributeContainer: Component<{
             onChange={(mod) => { props.attr.accessModifier = mod; props.update(); }} />
           <Field title="Type"
             initValue={props.attr.type}
-            onInputChange={e => { props.attr.type = e.currentTarget.value; props.update() }} />
+            onInputChange={e => { props.attr.type = e.currentTarget.value; props.update(); }} />
           <Field title="Default value"
             initValue={props.attr.defaultValue}
-            onInputChange={e => { props.attr.defaultValue = e.currentTarget.value; props.update() }} />
+            onInputChange={e => { props.attr.defaultValue = e.currentTarget.value; props.update(); }} />
           <button class="
                         py-1 w-full rounded mb-1 
                         border border-gray-200 
@@ -109,7 +67,7 @@ export const UMLAttributeContainer: Component<{
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 

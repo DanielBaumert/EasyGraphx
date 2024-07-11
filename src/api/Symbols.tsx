@@ -1,4 +1,4 @@
 
 export const getImplementsNameSymbol = Symbol();
-export const ImplementsNameSymbolIUMLDervice : string = "IUMLDerive";
+export const ImplementsNameSymbolIUMLDervice: string = "IUMLDerive";
 
