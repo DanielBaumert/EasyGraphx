@@ -10,6 +10,7 @@ import Canvas, { canvas } from './api/UI/Canvas';
 import { UMLArrowMode, UMLAttribute, UMLClass, UMLEnum, UMLInterface, UMLLineMode, UMLMethode, UMLRelationshipType, UmlToString } from './api/UML';
 import { UMLClassComponent } from './api/UML/UMLClass';
 import { Point } from './api/Drawing';
+import { deserialize, serialize } from './api/IO/Serialization';
 
 // var exampleClass = new UMLClass();
 // exampleClass.isAbstract = true;
@@ -449,16 +450,8 @@ const App: Component = () => {
   function onContextMenuSaveState() {
     const link = document.createElement("a");
     var file = new Blob(
-      [JSON.stringify({
-        classes: internalStore.classes,
-        relationships: internalStore.relationships.map(x =>
-        ({
-          uuid: x.uuid,
-          parent: x.parent?.uuid ?? undefined,
-          children: x.children.uuid,
-          type: x.type,
-        }))
-      })], { type: 'application/json;charset=utf-8' });
+      [ serialize(internalStore.classes[0]) ],
+      { type: 'application/json;charset=utf-8' });
     link.download = 'config.json';
     link.href = URL.createObjectURL(file);
     link.click();
@@ -482,94 +475,95 @@ const App: Component = () => {
       var file = fileLoader.files[0];
       var buffer = await file.arrayBuffer();
       var content = new TextDecoder("utf-8").decode(buffer);
-      var jsonArray = JSON.parse(content);
 
-      internalStore.classes = [];
-      internalStore.relationships = [];
+      internalStore.classes.push(deserialize(content) as UMLClass);
 
-      for (var element of jsonArray.classes) {
-        // const cls = new UMLClass({
-        //   x: element["x"] ?? 0,
-        //   y: element["y"] ?? 0
-        // });
-        // cls.property = element["property"];
-        // cls.uuid = element["uuid"];
-        // cls.name = element["name"],
-        // cls.width = element["width"];
-        // cls.height = element["height"];
-        // cls.isAbstract = element["isAbstract"] ?? false;
-        // cls.attributes = [];
-        // for (var attrElement of element["attributes"] ?? []) {
-        //   const attr: UMLAttribute = new UMLAttribute();
-        //   attr.isStatic = attrElement["isStatic"] ?? false;
-        //   attr.isConstant = attrElement["isConstant"] ?? false;
-        //   attr.accessModifier = attrElement["accessModifier"] ?? null;
-        //   attr.name = attrElement["name"];
-        //   attr.type = attrElement["type"] ?? null;
-        //   attr.multiplicity = attrElement["multiplicity"] ?? null;
-        //   attr.defaultValue = attrElement["defaultValue"] ?? null;
+    //   internalStore.classes = [];
+    //   internalStore.relationships = [];
 
-        //   cls.attributes.push(attr);
-        // }
-        // cls.methodes = [];
-        // for (var methElement of element["methodes"] ?? []) {
-        //   const meth: UMLMethode = new UMLMethode();
+    //   for (var element of jsonArray.classes) {
+    //     // const cls = new UMLClass({
+    //     //   x: element["x"] ?? 0,
+    //     //   y: element["y"] ?? 0
+    //     // });
+    //     // cls.property = element["property"];
+    //     // cls.uuid = element["uuid"];
+    //     // cls.name = element["name"],
+    //     // cls.width = element["width"];
+    //     // cls.height = element["height"];
+    //     // cls.isAbstract = element["isAbstract"] ?? false;
+    //     // cls.attributes = [];
+    //     // for (var attrElement of element["attributes"] ?? []) {
+    //     //   const attr: UMLAttribute = new UMLAttribute();
+    //     //   attr.isStatic = attrElement["isStatic"] ?? false;
+    //     //   attr.isConstant = attrElement["isConstant"] ?? false;
+    //     //   attr.accessModifier = attrElement["accessModifier"] ?? null;
+    //     //   attr.name = attrElement["name"];
+    //     //   attr.type = attrElement["type"] ?? null;
+    //     //   attr.multiplicity = attrElement["multiplicity"] ?? null;
+    //     //   attr.defaultValue = attrElement["defaultValue"] ?? null;
 
-        //   meth.isStatic = methElement["isStatic"] ?? false;
-        //   meth.name = methElement["name"] ?? "methode";
-        //   meth.returnType = methElement["returnType"] ?? null;
-        //   meth.accessModifier = methElement["accessModifier"] ?? null;
-        //   meth.parameters = [];
+    //     //   cls.attributes.push(attr);
+    //     // }
+    //     // cls.methodes = [];
+    //     // for (var methElement of element["methodes"] ?? []) {
+    //     //   const meth: UMLMethode = new UMLMethode();
 
-        //   for (var paramElement of methElement['parameters'] ?? []) {
-        //     const param = new UMLParameter();
-        //     param.name = paramElement["name"] ?? null;
-        //     param.type = paramElement["type"] ?? null;
+    //     //   meth.isStatic = methElement["isStatic"] ?? false;
+    //     //   meth.name = methElement["name"] ?? "methode";
+    //     //   meth.returnType = methElement["returnType"] ?? null;
+    //     //   meth.accessModifier = methElement["accessModifier"] ?? null;
+    //     //   meth.parameters = [];
 
-        //     meth.parameters.push(param);
-        //   }
+    //     //   for (var paramElement of methElement['parameters'] ?? []) {
+    //     //     const param = new UMLParameter();
+    //     //     param.name = paramElement["name"] ?? null;
+    //     //     param.type = paramElement["type"] ?? null;
 
-        //   cls.methodes.push(meth);
-        // }
+    //     //     meth.parameters.push(param);
+    //     //   }
+
+    //     //   cls.methodes.push(meth);
+    //     // }
 
 
-    //     const attribues = [];
-    //     for (var attr of element.attributes) {
-    //       attribues.push(Object.assign(UMLAttribute, attr));
-    //     }
+    // //     const attribues = [];
+    // //     for (var attr of element.attributes) {
+    // //       attribues.push(Object.assign(UMLAttribute, attr));
+    // //     }
 
-    //     const methodes = [];
-    //     for (var meth of element.methodes) {
+    // //     const methodes = [];
+    // //     for (var meth of element.methodes) {
 
-    //       const parameters = [];
-    //       for (var param of meth.parameters) {
-    //         parameters.push(Object.assign(UMLParameter, param));
-    //       }
-    //       methodes.push(Object.assign(parameters), meth));
-    //     }
+    // //       const parameters = [];
+    // //       for (var param of meth.parameters) {
+    // //         parameters.push(Object.assign(UMLParameter, param));
+    // //       }
+    // //       methodes.push(Object.assign(parameters), meth));
+    // //     }
 
-    //     let cls = Object.assign(new UMLClass, element);
+    // //     let cls = Object.assign(new UMLClass, element);
 
-    //     internalStore.classes.push(cls);
+    // //     internalStore.classes.push(cls);
+    // //   }
+
+    // //   for (var element of jsonArray.relationships) {
+    // //     let parent = internalStore.classes.find(x => x.uuid === element.parent);
+    // //     let children = internalStore.classes.find(x => x.uuid === element.children);
+
+    // //     internalStore.relationships.push(
+    // //       new UMLRelationship(
+    // //         children,
+    // //         parent,
+    // //         element["type"],
+    // //         element["uuid"]));
     //   }
 
-    //   for (var element of jsonArray.relationships) {
-    //     let parent = internalStore.classes.find(x => x.uuid === element.parent);
-    //     let children = internalStore.classes.find(x => x.uuid === element.children);
-
-    //     internalStore.relationships.push(
-    //       new UMLRelationship(
-    //         children,
-    //         parent,
-    //         element["type"],
-    //         element["uuid"]));
-      }
-
-    //   startUpdateView();
+       startUpdateView();
     });
 
-    // fileLoader.click();
-    // fileLoader.remove();
+    fileLoader.click();
+    fileLoader.remove();
   }
 
 
