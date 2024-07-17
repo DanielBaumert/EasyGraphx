@@ -1,7 +1,7 @@
 import { Component, Show, Switch, Match, For } from "solid-js";
 import { startUpdateView } from "../GlobalState";
-import { selectedClass, setSelectedClass, contentIndex, setContextIndex } from "../Signals";
-import { internalStore } from "../Store";
+import { contentIndex, setContextIndex, selectedClassIndex } from "../Signals";
+import { internalStore, setUserViewStore, userViewStore, viewStore } from "../Store";
 import { Label, Field, Button, Checkbox } from "../UI";
 import { UMLAttributeContainer } from "./UMLAttribute";
 import { UMLMethodeContainer } from "./UMLMethode";
@@ -21,48 +21,49 @@ export const UMLClassComponent: Component = () => {
   */
   function pushAttribute() {
     selectedClass().attributes.push(new UMLAttribute());
-    setSelectedClass(selectedClass());
+    // setSelectedClass(selectedClass());
     startUpdateView();
   }
 
   function popAttribute(attrIndex: number) {
     selectedClass().attributes.splice(attrIndex, 1);
-    setSelectedClass(selectedClass());
+    // setSelectedClass(selectedClass());
     startUpdateView();
   }
 
   function pushMethode() {
-    selectedClass().methodes.push(new UMLMethode());
-    setSelectedClass(selectedClass());
-    startUpdateView();
+    const umlClass = userViewStore.classes[selectedClassIndex()]
+    umlClass.methodes.push({ name: "methode", parameters: []});
+    setUserViewStore("classes", { ...userViewStore.classes, [selectedClassIndex()]: umlClass });
   }
 
   function popMethode(methIndex: number) {
-    selectedClass().methodes.splice(methIndex, 1);
-    setSelectedClass(selectedClass());
-    startUpdateView();
+    const umlClass = userViewStore.classes[selectedClassIndex()]
+    umlClass.methodes.splice(methIndex, 1);
+    setUserViewStore("classes", { ...userViewStore.classes, [selectedClassIndex()]: umlClass });
   }
 
   function pushParameter(methodeIndex: number) {
-    selectedClass().methodes[methodeIndex].parameters.push(
-      new UMLParameter());
-    setSelectedClass(selectedClass());
-    startUpdateView();
+
+    const umlClass = userViewStore.classes[selectedClassIndex()]
+    umlClass.methodes[methodeIndex].parameters.push({ });
+    setUserViewStore("classes", { ...userViewStore.classes, [selectedClassIndex()]: umlClass });
   }
+
   function popParameter(methIndex: number, parameterIndex: number) {
     selectedClass().methodes[methIndex].parameters.splice(parameterIndex, 1);
-    setSelectedClass(selectedClass());
+    // setSelectedClass(selectedClass());
     startUpdateView();
   }
 
   function pushRelationship() {
-    internalStore.relationships.push(
-      {
-        children: selectedClass(),
-        type : UMLRelationshipType.generalization,
-      } as UMLRelationship);
+    // internalStore.relationships.push(
+    //   {
+    //     children: selectedClass(),
+    //     type : UMLRelationshipType.generalization,
+    //   } as UMLRelationship);
 
-    setSelectedClass(selectedClass());
+    // setSelectedClass(selectedClass());
     startUpdateView();
   }
 
@@ -71,7 +72,7 @@ export const UMLClassComponent: Component = () => {
       .filter(x =>
         x.uuid !== relationShipUuid);
 
-    setSelectedClass(selectedClass());
+    // setSelectedClass(selectedClass());
     startUpdateView();
   }
 
@@ -83,19 +84,25 @@ export const UMLClassComponent: Component = () => {
   }
 
   function onNameInputChanged(e) {
-    selectedClass().name = e.currentTarget.value;
-    setSelectedClass(selectedClass());
-    startUpdateView();
+
+    const newName = e.currentTarget.value;
+
+    const umlClass = userViewStore.classes[selectedClassIndex()];
+    umlClass.name = newName;
+    
+    setUserViewStore("classes", { ...userViewStore.classes, [selectedClassIndex()]: umlClass });
   }
 
+  const selectedClass = () => userViewStore.classes[selectedClassIndex()];
+
   return (
-    <Show when={selectedClass()}>
+    <Show when={selectedClassIndex() !== null}>
       <div id="side-nav" class="fixed flex max-h-screen top-0 right-0 p-4 min-w-[351px]">
         <div class="flex grow flex-col">
           <div class="bg-white rounded border border-sky-400 px-4 py-2 mb-4 shadow">
             <Label title="Class" />
             <Field title='Property'
-              initValue={selectedClass().property}
+              initValue={userViewStore.classes[selectedClassIndex()].property}
               onInputChange={e => {
                 // if (selectedClass().property?.trim().toLowerCase() !== "interface" // source become an interface
                 //   && e.currentTarget.value.trim().toLowerCase() === "interface") {
@@ -105,9 +112,11 @@ export const UMLClassComponent: Component = () => {
 
                 // }
 
-                selectedClass().property = e.currentTarget.value;
-                setSelectedClass(selectedClass());
-                startUpdateView();
+                const umlClass = userViewStore.classes[selectedClassIndex()]
+                umlClass.property = e.currentTarget.value;
+
+                setUserViewStore("classes", { ... userViewStore.classes, [selectedClassIndex()]: umlClass });
+
               }} />
             <Field title='Name'
               initValue={selectedClass().name}

@@ -58,6 +58,7 @@ export enum UMLRelationshipType {
   generalization = "Generalization",
   none = undefined,
 }
+
 export interface IUMLAccessModifiers {
   accessModifier?: UMLAccessModifiers;
 }

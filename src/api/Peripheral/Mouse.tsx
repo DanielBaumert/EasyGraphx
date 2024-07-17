@@ -1,7 +1,7 @@
 import { Point } from "../Drawing";
 import { startUpdateView } from "../GlobalState";
 import { setSelectedClass, setContextMenuOpen, isContextMenuOpen, selectedClass, setLocationContextMenu } from "../Signals";
-import { internalStore, setStore, store } from "../Store";
+import { gridStore, internalStore, setStore, setViewStore, store, viewStore } from "../Store";
 import { ContextOpenMode } from "../UI";
 import { UMLClass } from "../UML";
 
@@ -48,7 +48,7 @@ function onSecondaryDown(e: MouseEvent) {
   setContextMenuOpen(false);
 }
 
-export function onCanvasMouseDown(e: MouseEvent) {
+export function onMouseDown(e: MouseEvent) {
   setSelectedClass(null);
   if (isContextMenuOpen()) {
     setContextMenuOpen(false);
@@ -76,7 +76,7 @@ function isCurrentlyOverAClass(): boolean {
 }
 
 
-export function onCanvasMouseMove(e: MouseEvent) {
+export function onMouseMove(e: MouseEvent) {
   let newHoverClass: UMLClass = findClassAt(e);
   if (!isClassFoundOnMouse(newHoverClass) && !isCurrentlyOverAClass()) {
     // no class below the mouse is found
@@ -92,25 +92,25 @@ export function onCanvasMouseMove(e: MouseEvent) {
       //canvas.style["cursor"] = "move";
       startUpdateView();
     } else {
-      const mouseViewX = e.x - store.viewOffset.x;
-      const mouseViewY = e.y - store.viewOffset.y;
-      const rightBorder = store.hoverClass.x + store.hoverClass.width;
-      const bottomBorder = store.hoverClass.y + store.hoverClass.height;
+      // const mouseViewX = e.x - viewStore.offset.x;
+      // const mouseViewY = e.y - viewStore.offset.y;
+      // const rightborder = store.hoverclass.x + store.hoverclass.width;
+      // const bottomborder = store.hoverclass.y + store.hoverclass.height;
 
-      if (
-        !store.hoverBorder &&
-        (store.hoverClass.x - 5 <= mouseViewX && mouseViewX <= store.hoverClass.x + 5 // left side hover
-          || store.hoverClass.y - 5 <= mouseViewY && mouseViewY + store.viewOffset.y <= store.hoverClass.y + 5 // top side hover
-          || rightBorder - 5 <= mouseViewX && mouseViewX <= rightBorder + 5 //
-          || bottomBorder - 5 <= mouseViewY && mouseViewY <= bottomBorder + 5)) {
-        // if the mouse near the border and the hoverBorder is not set => set border hover
-        setStore("hoverBorder", true);
-        startUpdateView();
-      } else if (store.hoverBorder) {
-        // if hoverBorder set but the mouse not close to the border => deselect border hover
-        setStore("hoverBorder", false);
-        startUpdateView();
-      }
+      // if (
+      //   !store.hoverBorder &&
+      //   (store.hoverClass.x - 5 <= mouseViewX && mouseViewX <= store.hoverClass.x + 5 // left side hover
+      //     || store.hoverClass.y - 5 <= mouseViewY && mouseViewY + viewStore.offset.y <= store.hoverClass.y + 5 // top side hover
+      //     || rightBorder - 5 <= mouseViewX && mouseViewX <= rightBorder + 5 //
+      //     || bottomBorder - 5 <= mouseViewY && mouseViewY <= bottomBorder + 5)) {
+      //   // if the mouse near the border and the hoverBorder is not set => set border hover
+      //   setStore("hoverBorder", true);
+      //   startUpdateView();
+      // } else if (store.hoverBorder) {
+      //   // if hoverBorder set but the mouse not close to the border => deselect border hover
+      //   setStore("hoverBorder", false);
+      //   startUpdateView();
+      // }
     }
   }
 
@@ -120,10 +120,10 @@ export function onCanvasMouseMove(e: MouseEvent) {
       // primary mouse button is pressed
       if (selectedClass() && store.readyToMove) {
         // If the primary button fell on a class while pressed
-        const gridSnap = (internalStore.gridInfo.space / (1 + internalStore.gridInfo.subCount)) * store.zoom;
+        const gridSnap = (gridStore.space / (1 + gridStore.subCount)) * viewStore.zoom;
 
-        const deltaX = (e.x - store.selectedClassOffset.x) * (1 / store.zoom);
-        const deltaY = (e.y - store.selectedClassOffset.y) * (1 / store.zoom);
+        const deltaX = (e.x - store.selectedClassOffset.x) * (1 / viewStore.zoom);
+        const deltaY = (e.y - store.selectedClassOffset.y) * (1 / viewStore.zoom);
 
         selectedClass().x = Math.floor((deltaX) / gridSnap) * gridSnap;
         selectedClass().y = Math.floor((deltaY) / gridSnap) * gridSnap;
@@ -132,9 +132,9 @@ export function onCanvasMouseMove(e: MouseEvent) {
         startUpdateView();
       } else {
         // if the primary button goes down on a class
-        setStore("viewOffset", {
-          x: store.viewOffset.x + (e.x - internalStore.mouseInfo.lastEvent.x),
-          y: store.viewOffset.y + (e.y - internalStore.mouseInfo.lastEvent.y)
+        setViewStore("offset", {
+          x: viewStore.offset.x + (e.x - internalStore.mouseInfo.lastEvent.x),
+          y: viewStore.offset.y + (e.y - internalStore.mouseInfo.lastEvent.y)
         });
         startUpdateView();
       }
@@ -154,7 +154,7 @@ export function onCanvasMouseMove(e: MouseEvent) {
 }
 
 
-export function onCanvasMouseUp(e: MouseEvent) {
+export function onMouseUp(e: MouseEvent) {
 
   if ((e.button & MouseButtons.SecondaryButton) === MouseButtons.SecondaryButton) {
     if (selectedClass() && store.readyToMove) {
@@ -199,15 +199,15 @@ export function onCanvasMouseUp(e: MouseEvent) {
 function findClassAt(position: Point): UMLClass {
   for (var i = internalStore.classes.length - 1; i >= 0; i--) {
     const umlClass = internalStore.classes[i];
-    const mouseViewX = position.x - store.viewOffset.x;
-    const mouseViewY = position.y - store.viewOffset.y;
+    const mouseViewX = position.x - viewStore.offset.x;
+    const mouseViewY = position.y - viewStore.offset.y;
 
-    if ((umlClass.x * store.zoom) <= mouseViewX // left
-      && mouseViewX <= (umlClass.x * store.zoom) + umlClass.width // right
-      && (umlClass.y * store.zoom) <= mouseViewY // top
-      && mouseViewY <= (umlClass.y * store.zoom) + umlClass.height /* bottom */) {
-      return umlClass;
-    }
+    // if ((umlClass.x * viewStore.zoom) <= mouseViewX // left
+    //   && mouseViewX <= (umlClass.x * viewStore.zoom) + umlClass.width // right
+    //   && (umlClass.y * viewStore.zoom) <= mouseViewY // top
+    //   && mouseViewY <= (umlClass.y * viewStore.zoom) + umlClass.height /* bottom */) {
+    //   return umlClass;
+    // }
   }
 
   return null;

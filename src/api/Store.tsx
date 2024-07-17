@@ -1,26 +1,64 @@
 import { createStore } from "solid-js/store";
-import { Point } from "./DrawUtils";
-import { UMLClass } from "./UMLClass";
-import { UMLRelationship } from "./UMLRelationship";
-import { ContextOpenMode } from "./UI/ContextOpenMode";
-
+import { Point } from "./Drawing";
+import { ContextOpenMode } from "./UI";
+import { UMLClass, UMLRelationship } from "./UMLv2";
 
 type GridInfo = {
-  background: string | CanvasGradient | CanvasPattern,
+  background: string ,
   space: number,
-  color: string | CanvasGradient | CanvasPattern,
+  color: string,
   subVisuale: boolean,
-  subColor: string | CanvasGradient | CanvasPattern,
+  subColor: string,
   subCount: number,
 };
 
+export const [gridStore, setGridStore] = createStore<GridInfo>({
+  background: "white",
+  color: "#00505033",
+  space: 64,
+  subVisuale: true,
+  subColor: "#00505011",
+  subCount: 3,
+});
+
+type ViewInfo = { 
+  offset: Point,
+  zoom: number,
+  fontSize: number,
+}
+
+export const [viewStore, setViewStore] = createStore<ViewInfo>({
+  offset: { x: 0, y: 0 },
+  zoom: 1.0,
+  fontSize: 18,
+});
+
 type ClassDrawInfo = {
-  background: string | CanvasGradient | CanvasPattern,
-  fontColor: string | CanvasGradient | CanvasPattern,
-  deselectColor: string | CanvasGradient | CanvasPattern,
-  selectColor: string | CanvasGradient | CanvasPattern,
+  background: string,
+  fontColor: string,
+  deselectColor: string,
+  selectColor: string,
   borderWidth: number;
 };
+
+export const [classDrawInfoStore, setClassDrawInfoStore] = createStore<ClassDrawInfo>({
+  background: "white",
+  fontColor: "black",
+  deselectColor: "black",
+  selectColor: "gray",
+  borderWidth: 2
+});
+
+
+type UserViewStoreInfo = {
+  classes: UMLClass[],
+  relationships: UMLRelationship[],
+}
+
+export const [userViewStore, setUserViewStore] = createStore<UserViewStoreInfo>({
+  classes: [],
+  relationships: []
+});
 
 
 type MouseInfo = {
@@ -31,14 +69,12 @@ type MouseInfo = {
 
 type InternalStore = {
   mouseInfo: MouseInfo,
-  viewOffset: Point,
-  gridInfo: GridInfo,
-  classDrawInfo: ClassDrawInfo,
   classes: UMLClass[],
   relationships: UMLRelationship[],
   contextMenuRef?: HTMLDivElement,
   contextMenuOpenMode?: ContextOpenMode;
 };
+
 
 export let internalStore: InternalStore = {
   mouseInfo: {
@@ -46,22 +82,7 @@ export let internalStore: InternalStore = {
     mousePrimary: { x: 0, y: 0 },
     mouseSecondary: { x: 0, y: 0 },
   },
-  classDrawInfo: {
-    background: "white",
-    fontColor: "black",
-    deselectColor: "black",
-    selectColor: "gray",
-    borderWidth: 2
-  },
-  viewOffset: { x: 0, y: 0 },
-  gridInfo: {
-    background: "white",
-    color: "#00505033",
-    space: 64,
-    subVisuale: true,
-    subColor: "#00505011",
-    subCount: 3,
-  },
+  
   classes: [],
   relationships: [],
   contextMenuRef: null,
@@ -77,9 +98,6 @@ export const [store, setStore] = createStore<
     hoverBorder: boolean,
     readyToMove: boolean,
     selectionMode: boolean,
-    viewOffset: Point,
-    fontSize: number,
-    zoom: number,
     rtc: {
       target: string;
     };
@@ -90,9 +108,6 @@ export const [store, setStore] = createStore<
     hoverBorder: false,
     readyToMove: false,
     selectionMode: false,
-    viewOffset: { x: 0, y: 0 },
-    zoom: 1.0,
-    fontSize: 18,
     rtc: {
       target: ""
     }

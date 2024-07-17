@@ -6,6 +6,9 @@ const Canvas: Component<{
   onMouseMove: JSX.EventHandlerUnion<HTMLCanvasElement, MouseEvent>,
   onMouseUp: JSX.EventHandlerUnion<HTMLCanvasElement, MouseEvent>,
 }> = (props) => {
+
+
+  
   return <canvas
     ref={canvas} id="canny"
     class='absolute bg-transparent'
