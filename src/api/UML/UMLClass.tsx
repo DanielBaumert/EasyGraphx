@@ -84,13 +84,8 @@ export const UMLClassComponent: Component = () => {
   }
 
   function onNameInputChanged(e) {
-
     const newName = e.currentTarget.value;
-
-    const umlClass = userViewStore.classes[selectedClassIndex()];
-    umlClass.name = newName;
-    
-    setUserViewStore("classes", { ...userViewStore.classes, [selectedClassIndex()]: umlClass });
+    setUserViewStore("classes",selectedClassIndex(), "name", newName);
   }
 
   const selectedClass = () => userViewStore.classes[selectedClassIndex()];
@@ -111,12 +106,8 @@ export const UMLClassComponent: Component = () => {
                 //   && e.currentTarget.value.trim().toLowerCase() !== "interface") {
 
                 // }
-
-                const umlClass = userViewStore.classes[selectedClassIndex()]
-                umlClass.property = e.currentTarget.value;
-
-                setUserViewStore("classes", { ... userViewStore.classes, [selectedClassIndex()]: umlClass });
-
+                
+                setUserViewStore("classes",selectedClassIndex(), "property", e.currentTarget.value);
               }} />
             <Field title='Name'
               initValue={selectedClass().name}
