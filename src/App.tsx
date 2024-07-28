@@ -11,6 +11,7 @@ import { UMLArrowMode, UMLAttribute, UMLClass, UMLEnum, UMLInterface, UMLLineMod
 import { UMLClassComponent } from './api/UML/UMLClass';
 import { Point } from './api/Drawing';
 import { deserialize, serialize } from './api/IO/Serialization';
+import { InitWebGpu } from './api/WebGPU';
 
 // var exampleClass = new UMLClass();
 // exampleClass.isAbstract = true;
@@ -31,7 +32,7 @@ const App: Component = () => {
   let frameNumber: number;
   let ctx: CanvasRenderingContext2D;
 
-  onMount(() => {
+  onMount(async () => {
     window.addEventListener("resize", e => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -47,9 +48,12 @@ const App: Component = () => {
 
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    ctx = canvas.getContext("2d");
-    ctx.translate(0.5, 0.5);
-    requestAnimationFrame(() => render(ctx));
+
+    await InitWebGpu(canvas);
+
+    // ctx = canvas.getContext("2d");
+    // ctx.translate(0.5, 0.5);
+    // requestAnimationFrame(() => render(ctx));
   });
 
   function render(ctx: CanvasRenderingContext2D) {
@@ -316,7 +320,7 @@ const App: Component = () => {
       endUpdateView();
     }
 
-    frameNumber = requestAnimationFrame(() => render(ctx));
+    // frameNumber = requestAnimationFrame(() => render(ctx));
   }
 
   /*
