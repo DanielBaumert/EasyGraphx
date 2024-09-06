@@ -1,85 +1,16 @@
-import { Accessor, Component, For, JSX, ParentComponent, Show, createSignal } from "solid-js";
-import { UMLClass } from "./UMLClass";
-import { Label, SmallLabel } from "./Label";
-import { store } from "./Store";
-import { selectedClass, setSelectedClass } from "./Signals";
-import { startUpdateView } from "./GlobalState";
-import { Radio } from "./CheckBox";
-import { drawArrow, drawDotLine, drawLine, drawNone, fillContainment, fillKristal, fillTriangle } from "./DrawUtils";
-import { DropDownArrowIcon } from "./Icons";
-
-export enum UMLRelationshipType {
-  association = "Association",
-  directionalAssociation = "Directional Association",
-  bidirectionalAssociation = "Bidirectional Association",
-  composition = "Composition",
-  aggregation = "Aggregation",
-  usage = "Usage",
-  subsitution = "Subsitution",
-  abstraction = "Abstraction",
-  dependency = "Dependency",
-  informationFlow = "Information Flow",
-  containment = "Containment",
-  realization = "Realization",
-  generalization = "Generalization",
-  none = undefined,
-}
-
-
-export const UMLLineMode = {
-  "Generalization": drawLine,
-  "Realization": drawDotLine,
-  "Containment": drawLine,
-  "Information Flow" : drawDotLine,
-  "Dependency" : drawDotLine,
-  "Abstraction" : drawDotLine,
-  "Subsitution" : drawDotLine,
-  "Usage" : drawDotLine,
-  "Association": drawLine,
-  "Directional Association" : drawLine,
-  "Bidirectional Association" : drawLine,
-  "Composition" : drawLine,
-  "Aggregation" : drawLine
-}
-
-export const UMLArrowMode = {
-  "Generalization": fillTriangle,
-  "Realization": fillTriangle,
-  "Containment": fillContainment,
-  "Information Flow" : drawArrow,
-  "Dependency" : drawArrow,
-  "Abstraction" : drawArrow,
-  "Subsitution" : drawArrow,
-  "Usage" : drawArrow,
-  "Association": undefined,
-  "Directional Association" : drawArrow,
-  "Bidirectional Association" : drawArrow,
-  "Composition" : fillKristal,
-  "Aggregation" : fillKristal,
-}
-
-
-export class UMLRelationship {
-  uuid: string;
-  type: UMLRelationshipType;
-  parent?: UMLClass;
-  readonly children: UMLClass;
-
-  constructor(children: UMLClass);
-  constructor(children: UMLClass, parent: UMLClass, type: UMLRelationshipType, uuid:string);
-  constructor(children: UMLClass, parent?: UMLClass, type?: UMLRelationshipType, uuid?:string) {
-    this.uuid = crypto.randomUUID();
-    this.type = type || UMLRelationshipType.generalization;
-    this.parent = parent || undefined;
-    this.children = children;
-  }
-}
+import { ParentComponent, createSignal, Show, For } from "solid-js";
+import { JSX } from "solid-js/jsx-runtime";
+import { UMLClass, UMLRelationship, UMLRelationshipType } from ".";
+import { startUpdateView } from "../GlobalState";
+import { setSelectedClass, selectedClass } from "../Signals";
+import { internalStore } from "../Store";
+import { SmallLabel, DropDownArrowIcon } from "../UI";
 
 export const UMLRelationshipContainer: ParentComponent<{
   index: number,
   childrenClass: UMLClass,
   relationship: UMLRelationship,
-  delete: Function
+  delete: Function;
 }> = (props) => {
   const [isExpanded, setExpanded] = createSignal<boolean>(true);
   const [isDropDownOpen, setDropDownOpen] = createSignal<boolean>(false);
@@ -91,9 +22,8 @@ export const UMLRelationshipContainer: ParentComponent<{
   let inputField: HTMLInputElement;
   let dropDownName: HTMLDivElement;
 
-  let dropDownTypeContainer : HTMLDivElement;
+  let dropDownTypeContainer: HTMLDivElement;
   let dropDownType: HTMLDivElement;
-
 
   function onExpanding() {
     setExpanded(!isExpanded());
@@ -112,8 +42,8 @@ export const UMLRelationshipContainer: ParentComponent<{
 
   function onInputChange() {
     console.log("input changed");
-    props.relationship.parent = store.classes.find(x => x.name === inputField.value);
-    
+    props.relationship.parent = internalStore.classes.find(x => x.name === inputField.value);
+
     setRelationshipParent(props.relationship.parent !== undefined);
     setClassFilter(inputField.value);
     setSelectedClass(selectedClass());
@@ -125,7 +55,7 @@ export const UMLRelationshipContainer: ParentComponent<{
     props.relationship.parent = umlClass;
     setRelationshipParent(true);
     setClassFilter(umlClass.name);
-    
+
     setSelectedClass(selectedClass());
     startUpdateView();
   }
@@ -135,31 +65,31 @@ export const UMLRelationshipContainer: ParentComponent<{
     updateDropdown();
   }
 
-  function updateRelationship(e: Event, type : UMLRelationshipType){
-    if(props.relationship.parent !== undefined) { 
+  function updateRelationship(e: Event, type: UMLRelationshipType) {
+    if (props.relationship.parent !== undefined) {
       props.relationship.type = type;
       setRelationship(type);
       setDropDownOpen(!isDropDownOpen());
       setSelectedClass(selectedClass());
       startUpdateView();
     }
-  } 
+  }
 
-  function onDropDownToggle(e: MouseEvent) { 
+  function onDropDownToggle(e: MouseEvent) {
     setDropDownOpen(!isDropDownOpen());
-    if(isDropDownOpen()){
+    if (isDropDownOpen()) {
       let bounce = dropDownTypeContainer.getBoundingClientRect();
       dropDownType.style.minWidth = `${bounce.width}px`;
       dropDownType.style.maxWidth = `${bounce.width}px`;
 
-      dropDownType.style.top = `calc(${bounce.bottom}px + 0.25rem)`
+      dropDownType.style.top = `calc(${bounce.bottom}px + 0.25rem)`;
     }
   }
 
-  const DropDownItem : ParentComponent<{
-    onClick?: JSX.EventHandlerUnion<HTMLDivElement, MouseEvent>
-  }> = (props) => 
-    <div onClick={props.onClick} class="py-0.5 px-2 select-none hover:bg-gradient-to-r hover:from-cyan-500 hover:to-blue-500 hover:text-white">{props.children}</div>
+  const DropDownItem: ParentComponent<{
+    onClick?: JSX.EventHandlerUnion<HTMLDivElement, MouseEvent>;
+  }> = (props) =>
+      <div onClick={props.onClick} class="py-0.5 px-2 select-none hover:bg-gradient-to-r hover:from-cyan-500 hover:to-blue-500 hover:text-white">{props.children}</div>;
 
   return (
     <div
@@ -182,15 +112,15 @@ export const UMLRelationshipContainer: ParentComponent<{
           <div id={this} ref={dropDownName} class="z-20 fixed border-2 overflow-y-auto rounded bg-white py-1 shadow max-h-64">
             <For each={(() => {
               let filter = classFilter();
-              return store.classes.filter(x => x.name.includes(filter))
+              return internalStore.classes.filter(x => x.name.includes(filter));
             })()}>
               {(umlClass, _) => {
                 return (<div class="w-full pl-1 py-1 select-none hover:bg-gradient-to-r hover:from-cyan-500 hover:to-blue-500 hover:text-white hover:shadow"
                   onClick={() => {
-                    onDropItemClick(umlClass)
+                    onDropItemClick(umlClass);
                     setFocus(false);
                   }}
-                >{umlClass.name}</div>)
+                >{umlClass.name}</div>);
               }}
             </For>
           </div>
@@ -241,6 +171,6 @@ export const UMLRelationshipContainer: ParentComponent<{
         </div>
       </div>
     </div>
-  )
+  );
 }
 

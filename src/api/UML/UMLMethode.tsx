@@ -1,61 +1,16 @@
 import { createSignal, ParentComponent, Show } from "solid-js";
-import { Button } from "./Button";
-import { CheckBox } from "./CheckBox";
-import { Field } from "./Field";
-import { SmallLabel } from "./Label";
-import { StringBuilder } from "./StringBuilder";
-import { UMLAccessModifiers, IUMLAccessModifiers, UMLAccessModifiersContainer } from "./UMLAccessModifiers";
-import { UMLParameter } from "./UMLParameter";
-import { startUpdateView } from "./GlobalState";
-import { DropDownArrowIcon } from "./Icons";
+import { UMLMethode, UMLAccessModifiers } from ".";
+import { startUpdateView } from "../GlobalState";
+import { Field, SmallLabel, Button, DropDownArrowIcon, Checkbox } from "../UI";
+import { UMLAccessModifiersContainer } from "./UMLAccessModifiers";
 
 
-export interface IUMLMethode extends IUMLAccessModifiers {
-  isStatic?: boolean;
-  name: string;
-  returnType?: string;
-  parameters?: UMLParameter[];
-  toString(): string;
-}
-
-export class UMLMethode implements IUMLMethode {
-  isStatic?: boolean;
-  name: string;
-  accessModifier?: UMLAccessModifiers;
-  parameters: UMLParameter[];
-  returnType?: string;
-
-  constructor() {
-    this.name = "methode";
-    this.parameters = [];
-  }
-
-  toString(): string {
-    var sb = new StringBuilder();
-
-    if (this.accessModifier) {
-      sb.write(this.accessModifier).write(' ');
-    }
-
-    sb.write(this.name).write('(')
-      .write(this.parameters.map(x => x.toString()).join(", "))
-      .write(')');
-
-    if (this.returnType) {
-      sb.write(':').write(this.returnType);
-    } else {
-      sb.write(":void");
-    }
-
-    return sb.toString();
-  }
-}
 
 export const UMLMethodeContainer: ParentComponent<{
   index: number,
   methode: UMLMethode,
   delete: Function,
-  onPushParameter: Function
+  onPushParameter: Function;
 }> = (props) => {
   const [isExpanded, setExpanded] = createSignal<boolean>(true);
   const [isMethodeNameNotEmpty, setMethodeNameNotEmpty] = createSignal<boolean>(props.methode.name !== "");
@@ -84,7 +39,7 @@ export const UMLMethodeContainer: ParentComponent<{
             title="Name"
             initValue={props.methode.name}
             onInputChange={onMethodeNameInputChanged} />
-          <CheckBox
+          <Checkbox
             id={`static-methode-${props.index}`}
             title="Static"
             value={props.methode.isStatic}
@@ -123,5 +78,5 @@ export const UMLMethodeContainer: ParentComponent<{
         </div>
       </div>
     </div>
-  )
-}
+  );
+};

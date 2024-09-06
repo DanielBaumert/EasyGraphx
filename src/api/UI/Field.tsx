@@ -1,10 +1,9 @@
-import { Component } from "solid-js";
-import { JSX } from "solid-js/jsx-runtime";
+import { Component, JSX } from "solid-js";
 
-export const Field: Component<{
+const Field: Component<{
   title: string,
   initValue?: string;
-  onInputChange: JSX.EventHandlerUnion<HTMLInputElement, InputEvent>
+  onInputChange: JSX.EventHandlerUnion<HTMLInputElement, InputEvent>;
 }>
   = (props) => {
     return (
@@ -20,4 +19,6 @@ export const Field: Component<{
         </label>
       </div>
     );
-  }
+  };
+
+export default Field;
