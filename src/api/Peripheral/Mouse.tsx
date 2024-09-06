@@ -1,9 +1,9 @@
 import { Point } from "../Drawing";
 import { startUpdateView } from "../GlobalState";
-import { setSelectedClass, setContextMenuOpen, isContextMenuOpen, selectedClass, setLocationContextMenu } from "../Signals";
+import { setSelectedClass, setContextMenuOpen, isContextMenuOpen, selectedClass, setLocationContextMenu, setSelectedPackage, selectedPackage } from "../Signals";
 import { internalStore, setStore, store } from "../Store";
 import { ContextOpenMode } from "../UI";
-import { UMLClass } from "../UML";
+import { UMLClass, UMLPackage } from "../UML";
 
 // https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/buttons
 export enum MouseButtons {
@@ -31,9 +31,14 @@ function onPrimaryDown(e: MouseEvent) {
 
   if (umlClass) {
     updateReadyToMove(true);
-    setSelectedClass(umlClass);
+    if(umlClass instanceof UMLPackage) {
+      setSelectedPackage(umlClass);
+    } else if(umlClass instanceof UMLClass) {
+      setSelectedClass(umlClass);
+    }
+
     setStore(
-      "selectedClassOffset",
+      "selectedUmlOffset",
       {
         x: (e.x - umlClass.x),
         y: (e.y - umlClass.y)
@@ -50,6 +55,8 @@ function onSecondaryDown(e: MouseEvent) {
 
 export function onCanvasMouseDown(e: MouseEvent) {
   setSelectedClass(null);
+  setSelectedPackage(null);
+
   if (isContextMenuOpen()) {
     setContextMenuOpen(false);
   }
@@ -67,8 +74,8 @@ export function onCanvasMouseDown(e: MouseEvent) {
   }
 }
 
-function isClassFoundOnMouse(umlClass: UMLClass): boolean {
-  return umlClass !== null;
+function isClassFoundOnMouse(uml: UMLClass | UMLPackage): boolean {
+  return uml !== null;
 }
 
 function isCurrentlyOverAClass(): boolean {
@@ -77,7 +84,7 @@ function isCurrentlyOverAClass(): boolean {
 
 
 export function onCanvasMouseMove(e: MouseEvent) {
-  let newHoverClass: UMLClass = findClassAt(e);
+  let newHoverClass: UMLClass | UMLPackage = findClassAt(e);
   if (!isClassFoundOnMouse(newHoverClass) && !isCurrentlyOverAClass()) {
     // no class below the mouse is found
     // but the store store have a class
@@ -118,17 +125,23 @@ export function onCanvasMouseMove(e: MouseEvent) {
   if (!isPrimaryAndSecondaryButtonPressed(e)) {
     if (isPrimaryButtonPressed(e)) {
       // primary mouse button is pressed
-      if (selectedClass() && store.readyToMove) {
+      if ((selectedClass() || selectedPackage()) && store.readyToMove) {
         // If the primary button fell on a class while pressed
         const gridSnap = (internalStore.gridInfo.space / (1 + internalStore.gridInfo.subCount)) * store.zoom;
 
-        const deltaX = (e.x - store.selectedClassOffset.x) * (1 / store.zoom);
-        const deltaY = (e.y - store.selectedClassOffset.y) * (1 / store.zoom);
+        const deltaX = (e.x - store.selectedUmlOffset.x) * (1 / store.zoom);
+        const deltaY = (e.y - store.selectedUmlOffset.y) * (1 / store.zoom);
 
-        selectedClass().x = Math.floor((deltaX) / gridSnap) * gridSnap;
-        selectedClass().y = Math.floor((deltaY) / gridSnap) * gridSnap;
+        if(selectedPackage()) {
+          selectedPackage().x = Math.floor((deltaX) / gridSnap) * gridSnap;
+          selectedPackage().y = Math.floor((deltaY) / gridSnap) * gridSnap;
+          setSelectedPackage(selectedPackage());
+        } else if (selectedClass()) {
+          selectedClass().x = Math.floor((deltaX) / gridSnap) * gridSnap;
+          selectedClass().y = Math.floor((deltaY) / gridSnap) * gridSnap;
+          setSelectedClass(selectedClass());
+        }
 
-        setSelectedClass(selectedClass());
         startUpdateView();
       } else {
         // if the primary button goes down on a class
@@ -157,7 +170,7 @@ export function onCanvasMouseMove(e: MouseEvent) {
 export function onCanvasMouseUp(e: MouseEvent) {
 
   if ((e.button & MouseButtons.SecondaryButton) === MouseButtons.SecondaryButton) {
-    if (selectedClass() && store.readyToMove) {
+    if ((selectedClass() || selectedPackage()) && store.readyToMove) {
       updateReadyToMove(false);
       return;
     }
@@ -169,7 +182,12 @@ export function onCanvasMouseUp(e: MouseEvent) {
     } else {
       // show context menu
       var umlClass = findClassAt(e);
-      setSelectedClass(umlClass);
+      if(umlClass instanceof UMLPackage) {
+        setSelectedPackage(umlClass);
+      } else if(umlClass instanceof UMLClass) {
+        setSelectedClass(umlClass);
+      }
+
       if (internalStore.contextMenuRef) {
         setContextMenuOpen(true);
 
@@ -196,7 +214,26 @@ export function onCanvasMouseUp(e: MouseEvent) {
 }
 
 
-function findClassAt(position: Point): UMLClass {
+function findClassAt(position: Point): UMLClass | UMLPackage {
+  // TODO: if a second one below the cursor and his area is smaller than the first one
+  // then the second one should be a part of the first one -> second one should be selected
+  let uml : UMLPackage = null;
+  
+  for(var i = internalStore.packages.length - 1; i >= 0; i--) {
+    const umlPackage = internalStore.packages[i];
+    const mouseViewX = position.x - store.viewOffset.x;
+    const mouseViewY = position.y - store.viewOffset.y;
+
+    if ((umlPackage.x * store.zoom) <= mouseViewX // left
+      && mouseViewX <= (umlPackage.x * store.zoom) + umlPackage.width // right
+      && (umlPackage.y * store.zoom) <= mouseViewY // top
+      && mouseViewY <= (umlPackage.y * store.zoom) + umlPackage.height /* bottom */) {
+
+      uml = umlPackage;
+      break;
+    }
+  }
+
   for (var i = internalStore.classes.length - 1; i >= 0; i--) {
     const umlClass = internalStore.classes[i];
     const mouseViewX = position.x - store.viewOffset.x;
@@ -210,7 +247,7 @@ function findClassAt(position: Point): UMLClass {
     }
   }
 
-  return null;
+  return uml;
 }
 
 function updateReadyToMove(state: boolean) {

@@ -7,23 +7,11 @@ import { selectedClass, setContextMenuOpen, locationContextMenu, isContextMenuOp
 import { onCanvasMouseDown, onCanvasMouseMove, onCanvasMouseUp } from './api/Peripheral/Mouse';
 import { Math2 } from './api/Math2';
 import Canvas, { canvas } from './api/UI/Canvas';
-import { UMLArrowMode, UMLAttribute, UMLClass, UMLEnum, UMLInterface, UMLLineMode, UMLMethode, UMLRelationshipType, UmlToString } from './api/UML';
+import { UMLArrowMode, UMLAttribute, UMLClass, UMLEnum, UMLInterface, UMLLineMode, UMLMethode, UMLPackage, UMLRelationshipType, UmlToString } from './api/UML';
 import { UMLClassComponent } from './api/UML/UMLClass';
 import { Point } from './api/Drawing';
 import { deserialize, serialize } from './api/IO/Serialization';
-
-// var exampleClass = new UMLClass();
-// exampleClass.isAbstract = true;
-// exampleClass.attributes.push(new UMLAttribute());
-// exampleClass.attributes.push(new UMLAttribute());
-// exampleClass.attributes.push(new UMLAttribute());
-// var exampleMethode = new UMLMethode();
-// exampleMethode.name = "Abc";
-// exampleMethode.returnType = "Integer";
-// exampleClass.methodes.push(exampleMethode);
-// exampleClass.methodes.push(exampleMethode);
-// exampleClass.methodes.push(exampleMethode);
-// exampleClass.methodes.push(exampleMethode);
+import { UMLPackageComponent } from './api/UML/UMLPackage';
 
 
 const App: Component = () => {
@@ -69,10 +57,10 @@ const App: Component = () => {
         const yClusterShift = (store.viewOffset.y % gridSize);
 
         if (internalStore.gridInfo.subVisuale) {
-          for (var x = -gridSize + xClusterShift; x < canvas.width + gridSize;) {
+          for (let x = -gridSize + xClusterShift; x < canvas.width + gridSize;) {
             drawLine(ctx, x, 0, x, canvas.height, 1, internalStore.gridInfo.color);
 
-            for (var sx = 0; sx < internalStore.gridInfo.subCount; sx++) {
+            for (let sx = 0; sx < internalStore.gridInfo.subCount; sx++) {
               x += subGridSize;
               drawLine(ctx, x, 0, x, canvas.height, 1, internalStore.gridInfo.subColor);
             }
@@ -80,10 +68,10 @@ const App: Component = () => {
             x += subGridSize;
           }
 
-          for (var y = -gridSize + yClusterShift; y < canvas.height + gridSize;) {
+          for (let y = -gridSize + yClusterShift; y < canvas.height + gridSize;) {
             drawLine(ctx, 0, y, canvas.width, y, 1, internalStore.gridInfo.color);
 
-            for (var sy = 0; sy < internalStore.gridInfo.subCount; sy++) {
+            for (let sy = 0; sy < internalStore.gridInfo.subCount; sy++) {
               y += subGridSize;
               drawLine(ctx, 0, y, canvas.width, y, 1, internalStore.gridInfo.subColor);
             }
@@ -91,54 +79,77 @@ const App: Component = () => {
             y += subGridSize;
           }
         } else {
-          for (var x = 0 + xClusterShift; x < canvas.width; x += gridSize) {
+          for (let x = 0 + xClusterShift; x < canvas.width; x += gridSize) {
             drawLine(ctx, x, 0, x, canvas.height, 1, internalStore.gridInfo.color);
           }
-          for (var y = 0 + yClusterShift; y < canvas.height; y += gridSize) {
+          for (let y = 0 + yClusterShift; y < canvas.height; y += gridSize) {
             drawLine(ctx, 0, y, canvas.width, y, 1, internalStore.gridInfo.color);
           }
         }
       }
+      // Font setup
+      const linePadding = 2;
+      ctx.font = `${store.fontSize * store.zoom}px Arial`;
+      const xPadding = 16 * store.zoom;
+      // Draw Packages
+      {
+        for(let umlPackage of internalStore.packages){
+          let titleSize = measureText(ctx, umlPackage.name);
+          let maxHeaderBoxSize = titleSize.height + (xPadding / 2);
+          let widestElementValue = titleSize.width + xPadding;
+          let girdWidth = Math.ceil(widestElementValue / subGridSize);
+          let maxBoxWidth = (girdWidth % 2 === 0 ? girdWidth + 1 : girdWidth) * subGridSize - 1;
+
+          const xClassOffset = store.viewOffset.x + (umlPackage.x * store.zoom);
+          const yClassOffset = store.viewOffset.y + (umlPackage.y * store.zoom);
+
+          let maxBoxHeight = maxHeaderBoxSize + (linePadding + linePadding);
+          let borderColor = internalStore.classDrawInfo.deselectColor;
+
+          drawRectangle(ctx, xClassOffset, yClassOffset, maxBoxWidth, maxBoxHeight, borderColor, internalStore.classDrawInfo.background);
+          drawTextHLeft(ctx, xClassOffset, yClassOffset + (xPadding / 4), xPadding, titleSize, internalStore.classDrawInfo.fontColor);
+          
+          umlPackage.width = maxBoxWidth;
+          umlPackage.height = maxHeaderBoxSize + (2 * linePadding);
+        }
+      }
       // Draw classes
       {
-        const linePadding = 2;
-        ctx.font = `${store.fontSize * store.zoom}px Arial`;
-        const xPadding = 16 * store.zoom;
-
-        for (var umlClass of internalStore.classes) {
-          var titleSize = measureText(ctx, UmlToString(umlClass));
-          var attrSizes = umlClass.attributes?.map((x : UMLAttribute)=> {
-            var measuredText = measureText(ctx, UmlToString(x));
+        
+        for (let umlClass of internalStore.classes) {
+          let titleSize = measureText(ctx, UmlToString(umlClass));
+          let attrSizes = umlClass.attributes?.map((x : UMLAttribute)=> {
+            let measuredText = measureText(ctx, UmlToString(x));
             if ('decoration' in measuredText ) {
               measuredText.decoration.underline = x.isStatic ?? false;
             }
             return measuredText;
           }) ?? [];
-          var methSizes = umlClass.methodes?.map((x : UMLMethode) => {
-            var measuredText = measureText(ctx, UmlToString(x));
+          let methSizes = umlClass.methodes?.map((x : UMLMethode) => {
+            let measuredText = measureText(ctx, UmlToString(x));
             if ('decoration' in measuredText ) {
               measuredText.decoration.underline = x.isStatic ?? false;
             }
             return measuredText;
           }) ?? [];
 
-          var maxHeaderBoxSize = titleSize.height + (xPadding / 2);
-          var widestElementValue = Math.max(
+          let maxHeaderBoxSize = titleSize.height + (xPadding / 2);
+          let widestElementValue = Math.max(
             titleSize.width + xPadding,
             ...methSizes?.map(x => x.width + xPadding),
             ...attrSizes?.map(x => x.width + xPadding));
 
-          var girdWidth = Math.ceil(widestElementValue / subGridSize);
-          var maxBoxWidth =
+          let girdWidth = Math.ceil(widestElementValue / subGridSize);
+          let maxBoxWidth =
             (girdWidth % 2 === 0 ? girdWidth + 1 : girdWidth) * subGridSize - 1;
 
-          var maxAttrBoxHeight = Math.max(attrSizes?.reduce((p, c) => p + c.height, 0), 10 * store.zoom);
-          var maxMethBoxHeight = Math.max(methSizes?.reduce((p, c) => p + c.height, 0), 10 * store.zoom);
+          let maxAttrBoxHeight = Math.max(attrSizes?.reduce((p, c) => p + c.height, 0), 10 * store.zoom);
+          let maxMethBoxHeight = Math.max(methSizes?.reduce((p, c) => p + c.height, 0), 10 * store.zoom);
 
           const xClassOffset = store.viewOffset.x + (umlClass.x * store.zoom);
           const yClassOffset = store.viewOffset.y + (umlClass.y * store.zoom);
 
-          var maxBoxHeight = maxHeaderBoxSize + maxAttrBoxHeight + maxMethBoxHeight + (linePadding + linePadding + linePadding);
+          let maxBoxHeight = maxHeaderBoxSize + maxAttrBoxHeight + maxMethBoxHeight + (linePadding + linePadding + linePadding);
 
           if (umlClass.uuid === selectedClass()?.uuid) {
 
@@ -162,11 +173,11 @@ const App: Component = () => {
           drawTextHCenter(ctx, xClassOffset, yClassOffset + (xPadding / 4), maxBoxWidth, xPadding, titleSize, internalStore.classDrawInfo.fontColor);
 
           // draw attributes
-          var yOffset = yClassOffset + maxHeaderBoxSize;
+          let yOffset = yClassOffset + maxHeaderBoxSize;
           drawLine(ctx, xClassOffset, yOffset, xClassOffset + maxBoxWidth, yOffset, 1, "black");
           yOffset += linePadding;
           //drawRectangle(ctx, xClassOffset, yOffset, maxBoxWidth, maxAttrBoxHeight, borderColor, internalStore.classDrawInfo.background);
-          for (var attr of attrSizes) {
+          for (let attr of attrSizes) {
             drawTextHLeft(ctx, xClassOffset, yOffset, xPadding, attr, internalStore.classDrawInfo.fontColor);
             yOffset += attr.height;
           }
@@ -177,7 +188,7 @@ const App: Component = () => {
           drawLine(ctx, xClassOffset, yOffset, xClassOffset + maxBoxWidth, yOffset, 1, "black");
           yOffset += linePadding;
           //drawRectangle(ctx, xClassOffset, yOffset, maxBoxWidth, maxMethBoxHeight, borderColor, internalStore.classDrawInfo.background);
-          for (var meth of methSizes) {
+          for (let meth of methSizes) {
             drawTextHLeft(ctx, xClassOffset, yOffset, xPadding, meth, internalStore.classDrawInfo.fontColor);
             yOffset += meth.height;
           }
@@ -344,6 +355,13 @@ const App: Component = () => {
     return { x, y };
   }
 
+  function onContextMenuAddPackage() {
+    const placement = getPlacementLocation();
+    internalStore.packages.push(
+      new UMLPackage(placement));
+    startUpdateView();
+  }
+
   function onContextMenuAddClass() {
     const placement = getPlacementLocation();
     internalStore.classes.push(
@@ -449,7 +467,7 @@ const App: Component = () => {
 
   function onContextMenuSaveState() {
     const link = document.createElement("a");
-    var file = new Blob(
+    let file = new Blob(
       [ serialize(internalStore.classes[0]) ],
       { type: 'application/json;charset=utf-8' });
     link.download = 'config.json';
@@ -472,16 +490,16 @@ const App: Component = () => {
         return;
       }
 
-      var file = fileLoader.files[0];
-      var buffer = await file.arrayBuffer();
-      var content = new TextDecoder("utf-8").decode(buffer);
+      let file = fileLoader.files[0];
+      let buffer = await file.arrayBuffer();
+      let content = new TextDecoder("utf-8").decode(buffer);
 
       internalStore.classes.push(deserialize(content) as UMLClass);
 
     //   internalStore.classes = [];
     //   internalStore.relationships = [];
 
-    //   for (var element of jsonArray.classes) {
+    //   for (let element of jsonArray.classes) {
     //     // const cls = new UMLClass({
     //     //   x: element["x"] ?? 0,
     //     //   y: element["y"] ?? 0
@@ -493,7 +511,7 @@ const App: Component = () => {
     //     // cls.height = element["height"];
     //     // cls.isAbstract = element["isAbstract"] ?? false;
     //     // cls.attributes = [];
-    //     // for (var attrElement of element["attributes"] ?? []) {
+    //     // for (let attrElement of element["attributes"] ?? []) {
     //     //   const attr: UMLAttribute = new UMLAttribute();
     //     //   attr.isStatic = attrElement["isStatic"] ?? false;
     //     //   attr.isConstant = attrElement["isConstant"] ?? false;
@@ -506,7 +524,7 @@ const App: Component = () => {
     //     //   cls.attributes.push(attr);
     //     // }
     //     // cls.methodes = [];
-    //     // for (var methElement of element["methodes"] ?? []) {
+    //     // for (let methElement of element["methodes"] ?? []) {
     //     //   const meth: UMLMethode = new UMLMethode();
 
     //     //   meth.isStatic = methElement["isStatic"] ?? false;
@@ -515,7 +533,7 @@ const App: Component = () => {
     //     //   meth.accessModifier = methElement["accessModifier"] ?? null;
     //     //   meth.parameters = [];
 
-    //     //   for (var paramElement of methElement['parameters'] ?? []) {
+    //     //   for (let paramElement of methElement['parameters'] ?? []) {
     //     //     const param = new UMLParameter();
     //     //     param.name = paramElement["name"] ?? null;
     //     //     param.type = paramElement["type"] ?? null;
@@ -528,15 +546,15 @@ const App: Component = () => {
 
 
     // //     const attribues = [];
-    // //     for (var attr of element.attributes) {
+    // //     for (let attr of element.attributes) {
     // //       attribues.push(Object.assign(UMLAttribute, attr));
     // //     }
 
     // //     const methodes = [];
-    // //     for (var meth of element.methodes) {
+    // //     for (let meth of element.methodes) {
 
     // //       const parameters = [];
-    // //       for (var param of meth.parameters) {
+    // //       for (let param of meth.parameters) {
     // //         parameters.push(Object.assign(UMLParameter, param));
     // //       }
     // //       methodes.push(Object.assign(parameters), meth));
@@ -547,7 +565,7 @@ const App: Component = () => {
     // //     internalStore.classes.push(cls);
     // //   }
 
-    // //   for (var element of jsonArray.relationships) {
+    // //   for (let element of jsonArray.relationships) {
     // //     let parent = internalStore.classes.find(x => x.uuid === element.parent);
     // //     let children = internalStore.classes.find(x => x.uuid === element.children);
 
@@ -576,6 +594,9 @@ const App: Component = () => {
       <ContextMenu
         hidden={!isContextMenuOpen()}
         location={locationContextMenu()} >
+          <NavItem title={"Add Package"}
+          classExt={"hover:bg-gradient-to-r hover:from-cyan-500 hover:to-blue-500"}
+          onclick={onContextMenuAddPackage} />
         <NavItem title={"Add Class"}
           classExt={"hover:bg-gradient-to-r hover:from-cyan-500 hover:to-blue-500"}
           onclick={onContextMenuAddClass} />
@@ -610,6 +631,7 @@ const App: Component = () => {
         <Button title='Connect' onclick={() => {}} />
       </div> */}
       <UMLClassComponent />
+      <UMLPackageComponent />
       <div class='z-20 absolute bottom-4 left-4 flex flex-col'>
         <Label title={`x: ${store.viewOffset.x}`} />
         <Label title={`y: ${store.viewOffset.y}`} />

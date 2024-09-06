@@ -8,6 +8,7 @@ import { UMLMethodeContainer } from "./UMLMethode";
 import { UMLParameterContainer } from "./UMLParameter";
 import { UMLRelationshipContainer } from "./UMLRelationship";
 import { UMLAttribute, UMLMethode, UMLParameter, UMLRelationship, UMLRelationshipType } from ".";
+import { Tab } from "../Components/Tab";
 
 export enum UMLContextMenu {
   Attributes = 0,
@@ -16,6 +17,7 @@ export enum UMLContextMenu {
 }
 
 export const UMLClassComponent: Component = () => {
+
   /*
   * Attribute management 
   */
@@ -57,8 +59,8 @@ export const UMLClassComponent: Component = () => {
 
   function pushRelationship() {
     internalStore.relationships.push(
-      {
-        children: selectedClass(),
+        {
+          children: selectedClass(),
         type : UMLRelationshipType.generalization,
       } as UMLRelationship);
 
@@ -117,27 +119,9 @@ export const UMLClassComponent: Component = () => {
           {/* Tabs */}
           <div>
             <div class='flex flex-row justify-between'>
-              <div class={`py-1 w-full text-sm font-medium text-gray-700 rounded-t
-              text-center select-none cursor-pointer
-              ${contentIndex() === UMLContextMenu.Attributes
-                  ? "bg-white border-sky-400 border-x border-t"
-                  : "border border-gray-400 bg-white border-b-sky-400 hover:border-sky-400 text-gray-400 hover:text-gray-700"}`}
-                onclick={() => setContextIndex(UMLContextMenu.Attributes)}
-              >Attributes</div>
-              <div class={`py-1 w-full text-sm font-medium text-gray-700 rounded-t
-              text-center select-none cursor-pointer
-              ${contentIndex() === UMLContextMenu.Methodes
-                  ? "bg-white border-sky-400 border-x border-t"
-                  : "border border-gray-400 bg-white border-b-sky-400 hover:border-sky-400 text-gray-400 hover:text-gray-700"}`}
-                onclick={() => setContextIndex(UMLContextMenu.Methodes)}
-              >Methodes</div>
-              <div class={`py-1 w-full text-sm font-medium text-gray-700 rounded-t
-              text-center select-none cursor-pointer
-              ${contentIndex() === UMLContextMenu.Relationships
-                  ? "bg-white border-sky-400 border-x border-t"
-                  : "border border-gray-400 bg-white border-b-sky-400 hover:border-sky-400 text-gray-400 hover:text-gray-700"}`}
-                onclick={() => setContextIndex(UMLContextMenu.Relationships)}
-              >Relationships</div>
+              <Tab isSelected={() => contentIndex() === UMLContextMenu.Attributes} onClick={() => setContextIndex(UMLContextMenu.Attributes)} >Attributes</Tab>
+              <Tab isSelected={() => contentIndex() === UMLContextMenu.Methodes} onClick={() => setContextIndex(UMLContextMenu.Methodes)} >Methodes</Tab>
+              <Tab isSelected={() => contentIndex() === UMLContextMenu.Relationships} onClick={() => setContextIndex(UMLContextMenu.Relationships)} >Relationships</Tab>
               {/* <Button title="" onclick={() => setContextIndex(1)} /> */}
             </div>
           </div>

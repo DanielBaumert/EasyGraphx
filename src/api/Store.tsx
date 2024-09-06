@@ -1,8 +1,7 @@
 import { createStore } from "solid-js/store";
-import { Point } from "./DrawUtils";
-import { UMLClass } from "./UMLClass";
-import { UMLRelationship } from "./UMLRelationship";
-import { ContextOpenMode } from "./UI/ContextOpenMode";
+import { Point } from "./Drawing";
+import { UMLClass, UMLPackage, UMLRelationship } from "./UML";
+import { ContextOpenMode } from "./UI";
 
 
 type GridInfo = {
@@ -35,12 +34,13 @@ type InternalStore = {
   gridInfo: GridInfo,
   classDrawInfo: ClassDrawInfo,
   classes: UMLClass[],
+  packages: UMLPackage[]
   relationships: UMLRelationship[],
   contextMenuRef?: HTMLDivElement,
   contextMenuOpenMode?: ContextOpenMode;
 };
 
-export let internalStore: InternalStore = {
+export let internalStore : InternalStore = {
   mouseInfo: {
     lastEvent: null,
     mousePrimary: { x: 0, y: 0 },
@@ -62,6 +62,7 @@ export let internalStore: InternalStore = {
     subColor: "#00505011",
     subCount: 3,
   },
+  packages: [],
   classes: [],
   relationships: [],
   contextMenuRef: null,
@@ -72,8 +73,8 @@ export let internalStore: InternalStore = {
 export const [store, setStore] = createStore<
   {
     class: UMLClass,
-    selectedClassOffset: Point,
-    hoverClass?: UMLClass,
+    selectedUmlOffset: Point,
+    hoverClass?: UMLClass | UMLPackage,
     hoverBorder: boolean,
     readyToMove: boolean,
     selectionMode: boolean,
@@ -85,7 +86,7 @@ export const [store, setStore] = createStore<
     };
   }>({
     class: null,
-    selectedClassOffset: { x: 0, y: 0 },
+    selectedUmlOffset: { x: 0, y: 0 },
     hoverClass: null,
     hoverBorder: false,
     readyToMove: false,

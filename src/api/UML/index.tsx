@@ -172,6 +172,25 @@ export class UMLEnum {
   }
 }
 
+export class UMLPackage { 
+  uuid: string;
+  name: string;
+  classes: UMLClass[];
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
+
+  constructor();
+  constructor(position: Point);
+  constructor(position?: Point) {
+    this.uuid = crypto.randomUUID();
+    this.name = "package";
+    this.x = position?.x ?? 0;
+    this.y = position?.y ?? 0;
+    this.classes = [];
+  }
+}
 
 export type UMLRelationship = {
   uuid: string;
@@ -179,6 +198,8 @@ export type UMLRelationship = {
   parent?: UMLClass;
   children: UMLClass;
 };
+
+
 
 
 function onUMLAttributeToString(umlAttribute: UMLAttribute): string {
