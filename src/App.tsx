@@ -1,6 +1,6 @@
 import { Component, children, onMount } from 'solid-js';
 import { ContextMenu, ContextOpenMode, Label, NavItem } from './api/UI';
-import { drawTextHCenter, measureText, drawRectangle, drawTextHLeft, drawLine, HALF_CIRCLE, drawNone } from './api/Drawing/CanvasDrawing';
+import { drawTextHCenter, measureText, drawRectangle, drawTextHLeft, drawLine, drawNone } from './api/Drawing/CanvasDrawing';
 import { internalStore, setStore, store } from './api/Store';
 import { changingsObserved, endUpdateView, startUpdateView } from './api/GlobalState';
 import { selectedClass, setContextMenuOpen, locationContextMenu, isContextMenuOpen } from './api/Signals';
@@ -93,7 +93,7 @@ const App: Component = () => {
       const xPadding = 16 * store.zoom;
       // Draw Packages
       {
-        for(let umlPackage of internalStore.packages){
+        for (let umlPackage of internalStore.packages) {
           let titleSize = measureText(ctx, umlPackage.name);
           let maxHeaderBoxSize = titleSize.height + (xPadding / 2);
           let widestElementValue = titleSize.width + xPadding;
@@ -108,26 +108,26 @@ const App: Component = () => {
 
           drawRectangle(ctx, xClassOffset, yClassOffset, maxBoxWidth, maxBoxHeight, borderColor, internalStore.classDrawInfo.background);
           drawTextHLeft(ctx, xClassOffset, yClassOffset + (xPadding / 4), xPadding, titleSize, internalStore.classDrawInfo.fontColor);
-          
+
           umlPackage.width = maxBoxWidth;
           umlPackage.height = maxHeaderBoxSize + (2 * linePadding);
         }
       }
       // Draw classes
       {
-        
+
         for (let umlClass of internalStore.classes) {
           let titleSize = measureText(ctx, UmlToString(umlClass));
-          let attrSizes = umlClass.attributes?.map((x : UMLAttribute)=> {
+          let attrSizes = umlClass.attributes?.map((x: UMLAttribute) => {
             let measuredText = measureText(ctx, UmlToString(x));
-            if ('decoration' in measuredText ) {
+            if ('decoration' in measuredText) {
               measuredText.decoration.underline = x.isStatic ?? false;
             }
             return measuredText;
           }) ?? [];
-          let methSizes = umlClass.methodes?.map((x : UMLMethode) => {
+          let methSizes = umlClass.methodes?.map((x: UMLMethode) => {
             let measuredText = measureText(ctx, UmlToString(x));
-            if ('decoration' in measuredText ) {
+            if ('decoration' in measuredText) {
               measuredText.decoration.underline = x.isStatic ?? false;
             }
             return measuredText;
@@ -233,7 +233,7 @@ const App: Component = () => {
                 arrowMode(ctx, srcx, srcy, arrowSize, arrowSize, m, "black", fillMode);
               }
               if (relationships.type === UMLRelationshipType.bidirectionalAssociation) {
-                arrowMode(ctx, dstx, dsty, arrowSize, arrowSize, m - HALF_CIRCLE, "black", fillMode);
+                arrowMode(ctx, dstx, dsty, arrowSize, arrowSize, m - Math2.RAD180, "black", fillMode);
               }
             } else {
               // parent right
@@ -249,7 +249,7 @@ const App: Component = () => {
 
               lineMode(ctx, srcx, srcy, dstx, dsty, 1, "black");
               if (arrowMode !== undefined) {
-                arrowMode(ctx, dstx, dsty, arrowSize, arrowSize, m + HALF_CIRCLE, "black", fillMode);
+                arrowMode(ctx, dstx, dsty, arrowSize, arrowSize, m + Math2.RAD180, "black", fillMode);
               }
               if (relationships.type === UMLRelationshipType.bidirectionalAssociation) {
                 arrowMode(ctx, srcx, srcy, arrowSize, arrowSize, m, "black", fillMode);
@@ -268,7 +268,7 @@ const App: Component = () => {
             let m = Math.atan(dy / dx);
 
             if (m < 0) {
-              m -= HALF_CIRCLE;
+              m -= Math2.RAD180;
             }
 
 
@@ -277,7 +277,7 @@ const App: Component = () => {
               arrowMode(ctx, srcx, srcy, arrowSize, arrowSize, m, "black", fillMode);
             }
             if (relationships.type === UMLRelationshipType.bidirectionalAssociation) {
-              arrowMode(ctx, dstx, dsty, arrowSize, arrowSize, m + HALF_CIRCLE, "black", fillMode);
+              arrowMode(ctx, dstx, dsty, arrowSize, arrowSize, m + Math2.RAD180, "black", fillMode);
             }
           } else {
             // TB
@@ -292,7 +292,7 @@ const App: Component = () => {
             let m = Math.atan(dy / dx);
 
             if (m > 0) {
-              m -= HALF_CIRCLE;
+              m -= Math2.RAD180;
             }
 
             lineMode(ctx, srcx, srcy, dstx, dsty, 1, "black");
@@ -300,7 +300,7 @@ const App: Component = () => {
               arrowMode(ctx, dstx, dsty, arrowSize, arrowSize, m, "black", fillMode);
             }
             if (relationships.type === UMLRelationshipType.bidirectionalAssociation) {
-              arrowMode(ctx, srcx, srcy, arrowSize, arrowSize, m + HALF_CIRCLE, "black", fillMode);
+              arrowMode(ctx, srcx, srcy, arrowSize, arrowSize, m + Math2.RAD180, "black", fillMode);
             }
           }
         }
@@ -468,7 +468,7 @@ const App: Component = () => {
   function onContextMenuSaveState() {
     const link = document.createElement("a");
     let file = new Blob(
-      [ serialize(internalStore.classes[0]) ],
+      [serialize(internalStore.classes[0])],
       { type: 'application/json;charset=utf-8' });
     link.download = 'config.json';
     link.href = URL.createObjectURL(file);
@@ -496,88 +496,88 @@ const App: Component = () => {
 
       internalStore.classes.push(deserialize(content) as UMLClass);
 
-    //   internalStore.classes = [];
-    //   internalStore.relationships = [];
+      //   internalStore.classes = [];
+      //   internalStore.relationships = [];
 
-    //   for (let element of jsonArray.classes) {
-    //     // const cls = new UMLClass({
-    //     //   x: element["x"] ?? 0,
-    //     //   y: element["y"] ?? 0
-    //     // });
-    //     // cls.property = element["property"];
-    //     // cls.uuid = element["uuid"];
-    //     // cls.name = element["name"],
-    //     // cls.width = element["width"];
-    //     // cls.height = element["height"];
-    //     // cls.isAbstract = element["isAbstract"] ?? false;
-    //     // cls.attributes = [];
-    //     // for (let attrElement of element["attributes"] ?? []) {
-    //     //   const attr: UMLAttribute = new UMLAttribute();
-    //     //   attr.isStatic = attrElement["isStatic"] ?? false;
-    //     //   attr.isConstant = attrElement["isConstant"] ?? false;
-    //     //   attr.accessModifier = attrElement["accessModifier"] ?? null;
-    //     //   attr.name = attrElement["name"];
-    //     //   attr.type = attrElement["type"] ?? null;
-    //     //   attr.multiplicity = attrElement["multiplicity"] ?? null;
-    //     //   attr.defaultValue = attrElement["defaultValue"] ?? null;
+      //   for (let element of jsonArray.classes) {
+      //     // const cls = new UMLClass({
+      //     //   x: element["x"] ?? 0,
+      //     //   y: element["y"] ?? 0
+      //     // });
+      //     // cls.property = element["property"];
+      //     // cls.uuid = element["uuid"];
+      //     // cls.name = element["name"],
+      //     // cls.width = element["width"];
+      //     // cls.height = element["height"];
+      //     // cls.isAbstract = element["isAbstract"] ?? false;
+      //     // cls.attributes = [];
+      //     // for (let attrElement of element["attributes"] ?? []) {
+      //     //   const attr: UMLAttribute = new UMLAttribute();
+      //     //   attr.isStatic = attrElement["isStatic"] ?? false;
+      //     //   attr.isConstant = attrElement["isConstant"] ?? false;
+      //     //   attr.accessModifier = attrElement["accessModifier"] ?? null;
+      //     //   attr.name = attrElement["name"];
+      //     //   attr.type = attrElement["type"] ?? null;
+      //     //   attr.multiplicity = attrElement["multiplicity"] ?? null;
+      //     //   attr.defaultValue = attrElement["defaultValue"] ?? null;
 
-    //     //   cls.attributes.push(attr);
-    //     // }
-    //     // cls.methodes = [];
-    //     // for (let methElement of element["methodes"] ?? []) {
-    //     //   const meth: UMLMethode = new UMLMethode();
+      //     //   cls.attributes.push(attr);
+      //     // }
+      //     // cls.methodes = [];
+      //     // for (let methElement of element["methodes"] ?? []) {
+      //     //   const meth: UMLMethode = new UMLMethode();
 
-    //     //   meth.isStatic = methElement["isStatic"] ?? false;
-    //     //   meth.name = methElement["name"] ?? "methode";
-    //     //   meth.returnType = methElement["returnType"] ?? null;
-    //     //   meth.accessModifier = methElement["accessModifier"] ?? null;
-    //     //   meth.parameters = [];
+      //     //   meth.isStatic = methElement["isStatic"] ?? false;
+      //     //   meth.name = methElement["name"] ?? "methode";
+      //     //   meth.returnType = methElement["returnType"] ?? null;
+      //     //   meth.accessModifier = methElement["accessModifier"] ?? null;
+      //     //   meth.parameters = [];
 
-    //     //   for (let paramElement of methElement['parameters'] ?? []) {
-    //     //     const param = new UMLParameter();
-    //     //     param.name = paramElement["name"] ?? null;
-    //     //     param.type = paramElement["type"] ?? null;
+      //     //   for (let paramElement of methElement['parameters'] ?? []) {
+      //     //     const param = new UMLParameter();
+      //     //     param.name = paramElement["name"] ?? null;
+      //     //     param.type = paramElement["type"] ?? null;
 
-    //     //     meth.parameters.push(param);
-    //     //   }
+      //     //     meth.parameters.push(param);
+      //     //   }
 
-    //     //   cls.methodes.push(meth);
-    //     // }
+      //     //   cls.methodes.push(meth);
+      //     // }
 
 
-    // //     const attribues = [];
-    // //     for (let attr of element.attributes) {
-    // //       attribues.push(Object.assign(UMLAttribute, attr));
-    // //     }
+      // //     const attribues = [];
+      // //     for (let attr of element.attributes) {
+      // //       attribues.push(Object.assign(UMLAttribute, attr));
+      // //     }
 
-    // //     const methodes = [];
-    // //     for (let meth of element.methodes) {
+      // //     const methodes = [];
+      // //     for (let meth of element.methodes) {
 
-    // //       const parameters = [];
-    // //       for (let param of meth.parameters) {
-    // //         parameters.push(Object.assign(UMLParameter, param));
-    // //       }
-    // //       methodes.push(Object.assign(parameters), meth));
-    // //     }
+      // //       const parameters = [];
+      // //       for (let param of meth.parameters) {
+      // //         parameters.push(Object.assign(UMLParameter, param));
+      // //       }
+      // //       methodes.push(Object.assign(parameters), meth));
+      // //     }
 
-    // //     let cls = Object.assign(new UMLClass, element);
+      // //     let cls = Object.assign(new UMLClass, element);
 
-    // //     internalStore.classes.push(cls);
-    // //   }
+      // //     internalStore.classes.push(cls);
+      // //   }
 
-    // //   for (let element of jsonArray.relationships) {
-    // //     let parent = internalStore.classes.find(x => x.uuid === element.parent);
-    // //     let children = internalStore.classes.find(x => x.uuid === element.children);
+      // //   for (let element of jsonArray.relationships) {
+      // //     let parent = internalStore.classes.find(x => x.uuid === element.parent);
+      // //     let children = internalStore.classes.find(x => x.uuid === element.children);
 
-    // //     internalStore.relationships.push(
-    // //       new UMLRelationship(
-    // //         children,
-    // //         parent,
-    // //         element["type"],
-    // //         element["uuid"]));
-    //   }
+      // //     internalStore.relationships.push(
+      // //       new UMLRelationship(
+      // //         children,
+      // //         parent,
+      // //         element["type"],
+      // //         element["uuid"]));
+      //   }
 
-       startUpdateView();
+      startUpdateView();
     });
 
     fileLoader.click();
@@ -594,7 +594,7 @@ const App: Component = () => {
       <ContextMenu
         hidden={!isContextMenuOpen()}
         location={locationContextMenu()} >
-          <NavItem title={"Add Package"}
+        <NavItem title={"Add Package"}
           classExt={"hover:bg-gradient-to-r hover:from-cyan-500 hover:to-blue-500"}
           onclick={onContextMenuAddPackage} />
         <NavItem title={"Add Class"}

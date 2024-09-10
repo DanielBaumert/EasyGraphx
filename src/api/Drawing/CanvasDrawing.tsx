@@ -1,6 +1,6 @@
+import { Math2 } from "../Math2";
 import { MultiTextBlock, SingleTextBlock } from "./TextBlock";
-export const HALF_CIRCLE = Math.PI;
-export const FULL_CIRCLE = 2 * Math.PI;
+
 
 export function drawTextHCenter(
   ctx: CanvasRenderingContext2D,
@@ -221,7 +221,7 @@ export function fillContainment(
   // x += w;
   // y += hCenter;
 
-  ctx.arc(x + r1.x, y + r1.y, hCenter, 0, FULL_CIRCLE);
+  ctx.arc(x + r1.x, y + r1.y, hCenter, 0, Math2.RAD360);
   ctx.stroke();
   ctx.fill();
 

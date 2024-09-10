@@ -1,11 +1,11 @@
-import { UMLAccessModifiers, UMLAttribute, UMLClass, UMLMethode, UMLParameter } from "../UML";
-import { UMLRelationshipContainer } from "../UML/UMLRelationship";
+import { UMLAttribute, UMLClass, UMLMethode, UMLPackage, UMLParameter } from "../UML";
 
 const classes = {
   UMLAttribute,
   UMLParameter,
   UMLMethode,
   UMLClass,
+  UMLPackage
 };
 
 export function serialize(object: any) { 
@@ -23,8 +23,8 @@ export function deserialize(json : string) {
   
   return JSON.parse(json, (_, value) => {
     if (value && typeof (value) === "object" && value.__type) {
-      const DynamicClass = classes[value.__type]
-      value = Object.assign(new DynamicClass(), value);
+      const dynamicClass = classes[value.__type]
+      value = Object.assign(new dynamicClass(), value);
       delete value.__type;
     }
     return value;

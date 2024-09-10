@@ -1,9 +1,10 @@
 import { Point } from "../Drawing";
 import { startUpdateView } from "../GlobalState";
+import { Math2 } from "../Math2";
 import { setSelectedClass, setContextMenuOpen, isContextMenuOpen, selectedClass, setLocationContextMenu, setSelectedPackage, selectedPackage } from "../Signals";
 import { internalStore, setStore, store } from "../Store";
 import { ContextOpenMode } from "../UI";
-import { UMLClass, UMLPackage } from "../UML";
+import { UMLClass, UMLEnum, UMLInterface, UMLPackage } from "../UML";
 
 // https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/buttons
 export enum MouseButtons {
@@ -12,28 +13,28 @@ export enum MouseButtons {
   PrimaryAndSecondary = PrimaryButton | SecondaryButton
 }
 
-function isPrimaryButtonPressed(e: MouseEvent): boolean {
+const isPrimaryButtonPressed = (e: MouseEvent): boolean => {
   return (e.buttons & MouseButtons.PrimaryButton) === MouseButtons.PrimaryButton;
 }
 
-function isSecondaryButtonPressed(e: MouseEvent): boolean {
+const isSecondaryButtonPressed = (e: MouseEvent): boolean => {
   return (e.buttons & MouseButtons.SecondaryButton) === MouseButtons.SecondaryButton;
 }
 
-function isPrimaryAndSecondaryButtonPressed(e: MouseEvent): boolean {
+const isPrimaryAndSecondaryButtonPressed= (e: MouseEvent): boolean => {
   return (e.buttons & MouseButtons.PrimaryAndSecondary) === MouseButtons.PrimaryAndSecondary;
 }
 
 
-function onPrimaryDown(e: MouseEvent) {
+const onPrimaryDown = (e: MouseEvent) => {
   internalStore.mouseInfo.mousePrimary = e;
-  let umlClass = findClassAt(e);
+  let umlClass = findUMLItemBelowMouse(e);
 
   if (umlClass) {
     updateReadyToMove(true);
-    if(umlClass instanceof UMLPackage) {
+    if (umlClass instanceof UMLPackage) {
       setSelectedPackage(umlClass);
-    } else if(umlClass instanceof UMLClass) {
+    } else if (umlClass instanceof UMLClass) {
       setSelectedClass(umlClass);
     }
 
@@ -48,12 +49,12 @@ function onPrimaryDown(e: MouseEvent) {
 }
 
 
-function onSecondaryDown(e: MouseEvent) {
+const onSecondaryDown = (e: MouseEvent) => {
   internalStore.mouseInfo.mouseSecondary = e;
   setContextMenuOpen(false);
 }
 
-export function onCanvasMouseDown(e: MouseEvent) {
+export const onCanvasMouseDown = (e: MouseEvent) => {
   setSelectedClass(null);
   setSelectedPackage(null);
 
@@ -74,17 +75,17 @@ export function onCanvasMouseDown(e: MouseEvent) {
   }
 }
 
-function isClassFoundOnMouse(uml: UMLClass | UMLPackage): boolean {
+const isClassFoundOnMouse = (uml: UMLClass | UMLPackage): boolean => {
   return uml !== null;
 }
 
-function isCurrentlyOverAClass(): boolean {
+const isCurrentlyOverAClass = (): boolean => {
   return store.hoverClass === null;
 }
 
 
-export function onCanvasMouseMove(e: MouseEvent) {
-  let newHoverClass: UMLClass | UMLPackage = findClassAt(e);
+export const onCanvasMouseMove = (e: MouseEvent) => {
+  let newHoverClass: UMLClass | UMLPackage = findUMLItemBelowMouse(e);
   if (!isClassFoundOnMouse(newHoverClass) && !isCurrentlyOverAClass()) {
     // no class below the mouse is found
     // but the store store have a class
@@ -132,7 +133,7 @@ export function onCanvasMouseMove(e: MouseEvent) {
         const deltaX = (e.x - store.selectedUmlOffset.x) * (1 / store.zoom);
         const deltaY = (e.y - store.selectedUmlOffset.y) * (1 / store.zoom);
 
-        if(selectedPackage()) {
+        if (selectedPackage()) {
           selectedPackage().x = Math.floor((deltaX) / gridSnap) * gridSnap;
           selectedPackage().y = Math.floor((deltaY) / gridSnap) * gridSnap;
           setSelectedPackage(selectedPackage());
@@ -167,92 +168,116 @@ export function onCanvasMouseMove(e: MouseEvent) {
 }
 
 
-export function onCanvasMouseUp(e: MouseEvent) {
+export const onCanvasMouseUp = (e: MouseEvent) => {
 
-  if ((e.button & MouseButtons.SecondaryButton) === MouseButtons.SecondaryButton) {
-    if ((selectedClass() || selectedPackage()) && store.readyToMove) {
-      updateReadyToMove(false);
-      return;
+  if (isSecondaryButtonPressed(e)) {
+    onSecondaryMouseUp(e);
+  }
+}
+
+const onSecondaryMouseUp = (e: MouseEvent) => {
+  if ((selectedClass() || selectedPackage()) && store.readyToMove) {
+    updateReadyToMove(false);
+    return;
+  }
+
+  if (store.selectionMode) {
+    // Disable selection
+    setStore("selectionMode", false);
+    startUpdateView();
+  } else {
+    // show context menu
+    var umlClass = findUMLItemBelowMouse(e);
+    if (umlClass instanceof UMLPackage) {
+      setSelectedPackage(umlClass);
+    } else if (umlClass instanceof UMLClass) {
+      setSelectedClass(umlClass);
     }
 
-    if (store.selectionMode) {
-      // Disable selection
-      setStore("selectionMode", false);
-      startUpdateView();
-    } else {
-      // show context menu
-      var umlClass = findClassAt(e);
-      if(umlClass instanceof UMLPackage) {
-        setSelectedPackage(umlClass);
-      } else if(umlClass instanceof UMLClass) {
-        setSelectedClass(umlClass);
+    if (internalStore.contextMenuRef) {
+      setContextMenuOpen(true);
+
+      const contextMenuHeight = internalStore.contextMenuRef.clientHeight;
+      const contextMenuWidth = internalStore.contextMenuRef.clientWidth;
+      let location: Point = { x: e.x, y: e.y };
+
+      internalStore.contextMenuOpenMode = ContextOpenMode.Default;
+
+      if (location.x + contextMenuWidth > window.innerWidth) {
+        internalStore.contextMenuOpenMode |= ContextOpenMode.MirroredX;
+        location.x -= contextMenuWidth;
       }
 
-      if (internalStore.contextMenuRef) {
-        setContextMenuOpen(true);
-
-        const contextMenuHeight = internalStore.contextMenuRef.clientHeight;
-        const contextMenuWidth = internalStore.contextMenuRef.clientWidth;
-        let location : Point = { x: e.x, y: e.y };
-
-        internalStore.contextMenuOpenMode = ContextOpenMode.Default;
-
-        if(location.x + contextMenuWidth > window.innerWidth) {
-          internalStore.contextMenuOpenMode |= ContextOpenMode.MirroredX;
-          location.x -= contextMenuWidth;
-        } 
-
-        if (location.y + contextMenuHeight > window.innerHeight) {
-          internalStore.contextMenuOpenMode |= ContextOpenMode.MirroredY;
-          location.y -= contextMenuHeight 
-        } 
-        
-        setLocationContextMenu(location);
+      if (location.y + contextMenuHeight > window.innerHeight) {
+        internalStore.contextMenuOpenMode |= ContextOpenMode.MirroredY;
+        location.y -= contextMenuHeight
       }
+
+      setLocationContextMenu(location);
     }
   }
 }
 
+/**
+ * Find the UMLClass or UMLPackage below a position
+ * @param position The position to search for a UMLClass or UMLPackage
+ * @returns The Closes UMLClass or UMLPackage to the postiton but is a UMLClass closer than a UMLPackage then the UMLClass will be returned.
+ * If no UMLClass or UMLPackage is found then null will be returned.
+ */
+const findUMLItemBelowMouse = (position: Point): UMLClass | UMLPackage => {
 
-function findClassAt(position: Point): UMLClass | UMLPackage {
-  // TODO: if a second one below the cursor and his area is smaller than the first one
-  // then the second one should be a part of the first one -> second one should be selected
-  let uml : UMLPackage = null;
-  
-  for(var i = internalStore.packages.length - 1; i >= 0; i--) {
-    const umlPackage = internalStore.packages[i];
-    const mouseViewX = position.x - store.viewOffset.x;
-    const mouseViewY = position.y - store.viewOffset.y;
+  const normalMousePosition : Point = { 
+    x: position.x - store.viewOffset.x, 
+    y: position.y - store.viewOffset.y
+  };
 
-    if ((umlPackage.x * store.zoom) <= mouseViewX // left
-      && mouseViewX <= (umlPackage.x * store.zoom) + umlPackage.width // right
-      && (umlPackage.y * store.zoom) <= mouseViewY // top
-      && mouseViewY <= (umlPackage.y * store.zoom) + umlPackage.height /* bottom */) {
+  const umlPackage = findPackgeBelowMouse(normalMousePosition);
+  const umlClass = findClassBelowMouse(normalMousePosition);
 
-      uml = umlPackage;
-      break;
-    }
+  if(umlClass === null) { 
+    return umlPackage;
   }
 
+  return umlClass;
+}
+
+const findPackgeBelowMouse = (position: Point): UMLPackage => {
+  // TODO: if a second one below the cursor and his area is smaller than the first one
+  // then the second one should be a part of the first one -> second one should be selected
+
+  for (var i = internalStore.packages.length - 1; i >= 0; i--) {
+    const umlPackage = internalStore.packages[i];
+
+    if (isMouseInReagion(umlPackage, position))
+      return umlPackage;
+  }
+
+  return null;
+}
+
+const findClassBelowMouse = (position: Point): UMLClass => {
   for (var i = internalStore.classes.length - 1; i >= 0; i--) {
     const umlClass = internalStore.classes[i];
-    const mouseViewX = position.x - store.viewOffset.x;
-    const mouseViewY = position.y - store.viewOffset.y;
 
-    if ((umlClass.x * store.zoom) <= mouseViewX // left
-      && mouseViewX <= (umlClass.x * store.zoom) + umlClass.width // right
-      && (umlClass.y * store.zoom) <= mouseViewY // top
-      && mouseViewY <= (umlClass.y * store.zoom) + umlClass.height /* bottom */) {
+    if (isMouseInReagion(umlClass, position)) {
       return umlClass;
     }
   }
 
-  return uml;
+  return null;
 }
 
-function updateReadyToMove(state: boolean) {
-  setStore("readyToMove", (readyToMove) => {
-    readyToMove = state;
-    return readyToMove;
-  });
+
+const isMouseInReagion = (umlItem: UMLPackage | UMLClass, {x, y}) : boolean => {
+  const xMin = umlItem.x * store.zoom;
+  const xMax = (umlItem.x + umlItem.width) * store.zoom;
+  const yMin = umlItem.y * store.zoom;
+  const yMax = (umlItem.y + umlItem.height) * store.zoom;
+  
+  return Math2.inRange(x, xMin, xMax) &&
+    Math2.inRange(y, yMin, yMax);
+}
+
+const updateReadyToMove = (state: boolean) => {
+  setStore("readyToMove", (readyToMove) => state);
 }

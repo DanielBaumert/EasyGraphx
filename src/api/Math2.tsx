@@ -8,7 +8,10 @@ export class Math2 {
    * 2/6 PI <=> 60°
    */
   public static readonly RAD60: number = 2 * this.RAD30;
-
+  /**
+   * 3/6 PI <=> 90°
+   */
+  public static readonly RAD90: number = 3 * this.RAD30;
   /**
    * 4/6 PI <=> 120°
    */
@@ -18,7 +21,7 @@ export class Math2 {
    */
   public static readonly RAD150: number = 5 * this.RAD30;
   /**
-   * 5/6 PI <=> 150°
+   * 6/6 PI <=> 180°
    */
   public static readonly RAD180: number = Math.PI;
   /**
@@ -29,7 +32,10 @@ export class Math2 {
    * 8/6 PI <=> 240°
    */
   public static readonly RAD240: number = 8 * this.RAD30;
-
+  /**
+   * 9/6 PI <=> 270°
+   */
+  public static readonly RAD270: number = 9 * this.RAD30;
   /**
    * 10/6 PI <=> 300°
    */
@@ -38,9 +44,8 @@ export class Math2 {
    * 11/6 PI <=> 330°
    */
   public static readonly RAD330: number = 11 * this.RAD30;
-
   /**
-   * 11/6 PI <=> 360°
+   * 12/6 PI <=> 360°
    */
   public static readonly RAD360: number = 2 * Math.PI;
 
@@ -60,4 +65,9 @@ export class Math2 {
    * 7/4 PI <=> 315°
    */
   public static readonly RAD315: number = 7 * this.RAD45;
+  
+
+  public static inRange = (value: number, min: number, max: number): boolean => {
+    return min <= value && value <= max;
+  }
 }

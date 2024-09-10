@@ -4,7 +4,9 @@ type TextBlock = {
   width: number,
   height: number
   baseline: number;
+  changed: boolean;
 } 
+
 export type SingleTextBlock = {
   value: string,
   decoration: TextDecoration; 
@@ -13,3 +15,4 @@ export type SingleTextBlock = {
 export type MultiTextBlock = { 
   value: SingleTextBlock[]
 } & TextBlock;
+

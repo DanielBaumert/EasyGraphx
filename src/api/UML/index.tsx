@@ -58,6 +58,7 @@ export enum UMLRelationshipType {
   generalization = "Generalization",
   none = undefined,
 }
+
 export interface IUMLAccessModifiers {
   accessModifier?: UMLAccessModifiers;
 }
@@ -198,8 +199,6 @@ export type UMLRelationship = {
   parent?: UMLClass;
   children: UMLClass;
 };
-
-
 
 
 function onUMLAttributeToString(umlAttribute: UMLAttribute): string {
