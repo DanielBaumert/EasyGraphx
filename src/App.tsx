@@ -12,7 +12,7 @@ import { UMLClassComponent } from './api/UML/UMLClass';
 import { Point } from './api/Drawing';
 import { deserialize, serialize } from './api/IO/Serialization';
 import { UMLPackageComponent } from './api/UML/UMLPackage';
-
+import { drawBackground, drawClass as drawClasses } from './api/Drawing/UtilsDrawing';
 
 const App: Component = () => {
 
@@ -37,14 +37,14 @@ const App: Component = () => {
     canvas.height = window.innerHeight;
     ctx = canvas.getContext("2d");
     ctx.translate(0.5, 0.5);
+    ctx.imageSmoothingQuality = 'high';
+    ctx.imageSmoothingEnabled = true;
+    
     requestAnimationFrame(() => render(ctx));
   });
 
   function render(ctx: CanvasRenderingContext2D) {
     if (changingsObserved) {
-      ctx.imageSmoothingQuality = 'high';
-      ctx.imageSmoothingEnabled = true;
-
       ctx.fillStyle = internalStore.gridInfo.background;
       ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
@@ -53,39 +53,7 @@ const App: Component = () => {
 
       // Draw background
       {
-        const xClusterShift = (store.viewOffset.x % gridSize);
-        const yClusterShift = (store.viewOffset.y % gridSize);
-
-        if (internalStore.gridInfo.subVisuale) {
-          for (let x = -gridSize + xClusterShift; x < canvas.width + gridSize;) {
-            drawLine(ctx, x, 0, x, canvas.height, 1, internalStore.gridInfo.color);
-
-            for (let sx = 0; sx < internalStore.gridInfo.subCount; sx++) {
-              x += subGridSize;
-              drawLine(ctx, x, 0, x, canvas.height, 1, internalStore.gridInfo.subColor);
-            }
-
-            x += subGridSize;
-          }
-
-          for (let y = -gridSize + yClusterShift; y < canvas.height + gridSize;) {
-            drawLine(ctx, 0, y, canvas.width, y, 1, internalStore.gridInfo.color);
-
-            for (let sy = 0; sy < internalStore.gridInfo.subCount; sy++) {
-              y += subGridSize;
-              drawLine(ctx, 0, y, canvas.width, y, 1, internalStore.gridInfo.subColor);
-            }
-
-            y += subGridSize;
-          }
-        } else {
-          for (let x = 0 + xClusterShift; x < canvas.width; x += gridSize) {
-            drawLine(ctx, x, 0, x, canvas.height, 1, internalStore.gridInfo.color);
-          }
-          for (let y = 0 + yClusterShift; y < canvas.height; y += gridSize) {
-            drawLine(ctx, 0, y, canvas.width, y, 1, internalStore.gridInfo.color);
-          }
-        }
+        drawBackground(ctx, canvas, gridSize, subGridSize);
       }
       // Font setup
       const linePadding = 2;
@@ -115,89 +83,7 @@ const App: Component = () => {
       }
       // Draw classes
       {
-
-        for (let umlClass of internalStore.classes) {
-          let titleSize = measureText(ctx, UmlToString(umlClass));
-          let attrSizes = umlClass.attributes?.map((x: UMLAttribute) => {
-            let measuredText = measureText(ctx, UmlToString(x));
-            if ('decoration' in measuredText) {
-              measuredText.decoration.underline = x.isStatic ?? false;
-            }
-            return measuredText;
-          }) ?? [];
-          let methSizes = umlClass.methodes?.map((x: UMLMethode) => {
-            let measuredText = measureText(ctx, UmlToString(x));
-            if ('decoration' in measuredText) {
-              measuredText.decoration.underline = x.isStatic ?? false;
-            }
-            return measuredText;
-          }) ?? [];
-
-          let maxHeaderBoxSize = titleSize.height + (xPadding / 2);
-          let widestElementValue = Math.max(
-            titleSize.width + xPadding,
-            ...methSizes?.map(x => x.width + xPadding),
-            ...attrSizes?.map(x => x.width + xPadding));
-
-          let girdWidth = Math.ceil(widestElementValue / subGridSize);
-          let maxBoxWidth =
-            (girdWidth % 2 === 0 ? girdWidth + 1 : girdWidth) * subGridSize - 1;
-
-          let maxAttrBoxHeight = Math.max(attrSizes?.reduce((p, c) => p + c.height, 0), 10 * store.zoom);
-          let maxMethBoxHeight = Math.max(methSizes?.reduce((p, c) => p + c.height, 0), 10 * store.zoom);
-
-          const xClassOffset = store.viewOffset.x + (umlClass.x * store.zoom);
-          const yClassOffset = store.viewOffset.y + (umlClass.y * store.zoom);
-
-          let maxBoxHeight = maxHeaderBoxSize + maxAttrBoxHeight + maxMethBoxHeight + (linePadding + linePadding + linePadding);
-
-          if (umlClass.uuid === selectedClass()?.uuid) {
-
-            let borderColor = internalStore.classDrawInfo.selectColor;
-            ctx.shadowColor = borderColor as string;
-            ctx.shadowBlur = 7;
-
-            drawRectangle(ctx, xClassOffset, yClassOffset, maxBoxWidth, maxBoxHeight, borderColor, internalStore.classDrawInfo.background);
-
-            ctx.shadowBlur = 0;
-          } else {
-
-            let borderColor = internalStore.classDrawInfo.deselectColor;
-            drawRectangle(ctx, xClassOffset, yClassOffset, maxBoxWidth, maxBoxHeight, borderColor, internalStore.classDrawInfo.background);
-
-          }
-
-
-          // draw heder 
-          //drawRectangle(ctx, xClassOffset, yClassOffset, maxBoxWidth, maxHeaderBoxSize, borderColor, internalStore.classDrawInfo.background);
-          drawTextHCenter(ctx, xClassOffset, yClassOffset + (xPadding / 4), maxBoxWidth, xPadding, titleSize, internalStore.classDrawInfo.fontColor);
-
-          // draw attributes
-          let yOffset = yClassOffset + maxHeaderBoxSize;
-          drawLine(ctx, xClassOffset, yOffset, xClassOffset + maxBoxWidth, yOffset, 1, "black");
-          yOffset += linePadding;
-          //drawRectangle(ctx, xClassOffset, yOffset, maxBoxWidth, maxAttrBoxHeight, borderColor, internalStore.classDrawInfo.background);
-          for (let attr of attrSizes) {
-            drawTextHLeft(ctx, xClassOffset, yOffset, xPadding, attr, internalStore.classDrawInfo.fontColor);
-            yOffset += attr.height;
-          }
-
-          // draw methodes
-          yOffset = yClassOffset + maxHeaderBoxSize + maxAttrBoxHeight;
-          yOffset += linePadding;
-          drawLine(ctx, xClassOffset, yOffset, xClassOffset + maxBoxWidth, yOffset, 1, "black");
-          yOffset += linePadding;
-          //drawRectangle(ctx, xClassOffset, yOffset, maxBoxWidth, maxMethBoxHeight, borderColor, internalStore.classDrawInfo.background);
-          for (let meth of methSizes) {
-            drawTextHLeft(ctx, xClassOffset, yOffset, xPadding, meth, internalStore.classDrawInfo.fontColor);
-            yOffset += meth.height;
-          }
-
-          // set new size
-          umlClass.width = maxBoxWidth;
-          umlClass.height = maxHeaderBoxSize + maxAttrBoxHeight + maxMethBoxHeight + (3 * linePadding);
-          ctx.shadowBlur = 0;
-        }
+        drawClasses(ctx, xPadding, subGridSize, linePadding);
       }
       // Draw connections
       {
@@ -329,6 +215,8 @@ const App: Component = () => {
 
     frameNumber = requestAnimationFrame(() => render(ctx));
   }
+
+
 
   /*
    * Context Menu
@@ -496,94 +384,12 @@ const App: Component = () => {
 
       internalStore.classes.push(deserialize(content) as UMLClass);
 
-      //   internalStore.classes = [];
-      //   internalStore.relationships = [];
-
-      //   for (let element of jsonArray.classes) {
-      //     // const cls = new UMLClass({
-      //     //   x: element["x"] ?? 0,
-      //     //   y: element["y"] ?? 0
-      //     // });
-      //     // cls.property = element["property"];
-      //     // cls.uuid = element["uuid"];
-      //     // cls.name = element["name"],
-      //     // cls.width = element["width"];
-      //     // cls.height = element["height"];
-      //     // cls.isAbstract = element["isAbstract"] ?? false;
-      //     // cls.attributes = [];
-      //     // for (let attrElement of element["attributes"] ?? []) {
-      //     //   const attr: UMLAttribute = new UMLAttribute();
-      //     //   attr.isStatic = attrElement["isStatic"] ?? false;
-      //     //   attr.isConstant = attrElement["isConstant"] ?? false;
-      //     //   attr.accessModifier = attrElement["accessModifier"] ?? null;
-      //     //   attr.name = attrElement["name"];
-      //     //   attr.type = attrElement["type"] ?? null;
-      //     //   attr.multiplicity = attrElement["multiplicity"] ?? null;
-      //     //   attr.defaultValue = attrElement["defaultValue"] ?? null;
-
-      //     //   cls.attributes.push(attr);
-      //     // }
-      //     // cls.methodes = [];
-      //     // for (let methElement of element["methodes"] ?? []) {
-      //     //   const meth: UMLMethode = new UMLMethode();
-
-      //     //   meth.isStatic = methElement["isStatic"] ?? false;
-      //     //   meth.name = methElement["name"] ?? "methode";
-      //     //   meth.returnType = methElement["returnType"] ?? null;
-      //     //   meth.accessModifier = methElement["accessModifier"] ?? null;
-      //     //   meth.parameters = [];
-
-      //     //   for (let paramElement of methElement['parameters'] ?? []) {
-      //     //     const param = new UMLParameter();
-      //     //     param.name = paramElement["name"] ?? null;
-      //     //     param.type = paramElement["type"] ?? null;
-
-      //     //     meth.parameters.push(param);
-      //     //   }
-
-      //     //   cls.methodes.push(meth);
-      //     // }
-
-
-      // //     const attribues = [];
-      // //     for (let attr of element.attributes) {
-      // //       attribues.push(Object.assign(UMLAttribute, attr));
-      // //     }
-
-      // //     const methodes = [];
-      // //     for (let meth of element.methodes) {
-
-      // //       const parameters = [];
-      // //       for (let param of meth.parameters) {
-      // //         parameters.push(Object.assign(UMLParameter, param));
-      // //       }
-      // //       methodes.push(Object.assign(parameters), meth));
-      // //     }
-
-      // //     let cls = Object.assign(new UMLClass, element);
-
-      // //     internalStore.classes.push(cls);
-      // //   }
-
-      // //   for (let element of jsonArray.relationships) {
-      // //     let parent = internalStore.classes.find(x => x.uuid === element.parent);
-      // //     let children = internalStore.classes.find(x => x.uuid === element.children);
-
-      // //     internalStore.relationships.push(
-      // //       new UMLRelationship(
-      // //         children,
-      // //         parent,
-      // //         element["type"],
-      // //         element["uuid"]));
-      //   }
-
       startUpdateView();
     });
 
     fileLoader.click();
     fileLoader.remove();
   }
-
 
   /*
    * App
@@ -642,3 +448,5 @@ const App: Component = () => {
 };
 
 export default App;
+
+

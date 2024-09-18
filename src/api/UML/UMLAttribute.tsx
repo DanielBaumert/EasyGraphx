@@ -2,15 +2,33 @@ import { Component, createSignal, Show } from "solid-js";
 import { Checkbox, DropDownArrowIcon, Field } from "../UI";
 import { UMLAttribute } from ".";
 import { UMLAccessModifiersContainer } from "./UMLAccessModifiers";
+import { startUpdateView } from "../GlobalState";
 
 export const UMLAttributeContainer: Component<{
   index: number,
   attr: UMLAttribute,
   delete: Function,
   update: Function,
-}> = (props) => {
+}> = ({ update, ...props }) => {
   const [isExpanded, setExpanded] = createSignal<boolean>(true);
   const [isAttributeNameNotEmpty, setAttributeNameNotEmpty] = createSignal<boolean>(props.attr.name !== "");
+
+
+  const onNameChanged = (e: InputEvent) => {
+    props.attr.name = (e.currentTarget instanceof HTMLInputElement) && e.currentTarget.value;
+    setAttributeNameNotEmpty(props.attr.name !== "");
+    startUpdateView();
+  }
+
+  const onStaticChanged = (e) => {
+    props.attr.isStatic = e.currentTarget.checked;
+    startUpdateView();
+  }
+
+  const onConstantChanged = (e) => { 
+    props.attr.isConstant = e.currentTarget.checked;
+    startUpdateView();
+  };
 
   return (
     <div
@@ -19,29 +37,29 @@ export const UMLAttributeContainer: Component<{
         <div class="flex flex-col">
           <Field title="Name"
             initValue={props.attr.name}
-            onInputChange={e => { props.attr.name = e.currentTarget.value; setAttributeNameNotEmpty(props.attr.name !== ""); props.update(); }} />
+            onInputChange={onNameChanged} />
           <div class="grid grid-cols-2">
             <Checkbox
               id={`static-attribute-${props.index}`}
               title="Static"
               value={props.attr.isStatic}
-              onChanges={e => { props.attr.isStatic = e.currentTarget.checked; props.update(); }} />
+              onChanges={onStaticChanged} />
             <Checkbox
               id={`constant-attribute-${props.index}`}
               title="Constant"
               value={props.attr.isConstant}
-              onChanges={e => { props.attr.isConstant = e.currentTarget.checked; props.update(); }} />
+              onChanges={onConstantChanged} />
           </div>
           <UMLAccessModifiersContainer
             id={`attribute-${props.index}`}
             initValue={props.attr.accessModifier}
-            onChange={(mod) => { props.attr.accessModifier = mod; props.update(); }} />
+            onChange={(mod) => { props.attr.accessModifier = mod; update(); }} />
           <Field title="Type"
             initValue={props.attr.type}
-            onInputChange={e => { props.attr.type = e.currentTarget.value; props.update(); }} />
+            onInputChange={e => { props.attr.type = e.currentTarget.value; update(); }} />
           <Field title="Default value"
             initValue={props.attr.defaultValue}
-            onInputChange={e => { props.attr.defaultValue = e.currentTarget.value; props.update(); }} />
+            onInputChange={e => { props.attr.defaultValue = e.currentTarget.value; update(); }} />
           <button class="
                         py-1 w-full rounded mb-1 
                         border border-gray-200 
