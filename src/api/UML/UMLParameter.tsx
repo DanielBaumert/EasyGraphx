@@ -22,7 +22,7 @@ export const UMLParameterContainer: Component<{
 
 
   function getCollapesedLabel(): string {
-    const label = UmlToString(props.param);
+    const label = UmlToString(props.param as UMLParameter);
     if(label === '') 
       return 'Unnamed';
 

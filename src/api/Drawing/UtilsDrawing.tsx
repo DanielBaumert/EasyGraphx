@@ -55,16 +55,21 @@ export const drawClass = (ctx: CanvasRenderingContext2D, xPadding: number, subGr
 
     const umlClass : UMLClass = internalStore.classes[iUmlClass];
 
-    let titleSize = measureText(ctx, UmlToString(umlClass));
+    if(!(-store.viewOffset.x < umlClass.x + (umlClass.width ?? 0)  && umlClass.x < -store.viewOffset.x + document.body.clientWidth 
+      && -store.viewOffset.y < umlClass.y + (umlClass.height ?? 0)  && umlClass.y < -store.viewOffset.y + document.body.clientHeight)) {
+      continue;
+    }
+
+    let titleSize = measureText(ctx, UmlToString(umlClass as UMLClass));
     let attrSizes = umlClass.attributes?.map((x: UMLAttribute) => {
-      let measuredText = measureText(ctx, UmlToString(x));
+      let measuredText = measureText(ctx, UmlToString(x as UMLAttribute));
       if ('decoration' in measuredText) {
         measuredText.decoration.underline = x.isStatic ?? false;
       }
       return measuredText;
     }) ?? [];
     let methSizes = umlClass.methodes?.map((x: UMLMethode) => {
-      let measuredText = measureText(ctx, UmlToString(x));
+      let measuredText = measureText(ctx, UmlToString(x as UMLMethode));
       if ('decoration' in measuredText) {
         measuredText.decoration.underline = x.isStatic ?? false;
       }
@@ -88,26 +93,26 @@ export const drawClass = (ctx: CanvasRenderingContext2D, xPadding: number, subGr
 
     let maxBoxHeight = maxHeaderBoxSize + maxAttrBoxHeight + maxMethBoxHeight + (linePadding + linePadding + linePadding);
 
-    if(iUmlClass === 0) {
-      regionInfo = {
-        left: umlClass,
-        right: umlClass,
-        top: umlClass,
-        bottom: umlClass,
-      }
-    } else {
-      if(umlClass.x < regionInfo.left.x) { 
-        regionInfo.left = umlClass;
-      } else if(umlClass.x > regionInfo.right.x) { 
-        regionInfo.right = umlClass;
-      }
+    // if(iUmlClass === 0) {
+    //   regionInfo = {
+    //     left: umlClass,
+    //     right: umlClass,
+    //     top: umlClass,y
+    //     bottom: umlClass,
+    //   }
+    // } else {
+    //   if(umlClass.x < regionInfo.left.x) { 
+    //     regionInfo.left = umlClass;
+    //   } else if(umlClass.x > regionInfo.right.x) { 
+    //     regionInfo.right = umlClass;
+    //   }
       
-      if(umlClass.y < regionInfo.top.y) { 
-        regionInfo.top = umlClass;
-      } else if(umlClass.y > regionInfo.bottom.y) { 
-        regionInfo.bottom = umlClass;
-      }
-    }
+    //   if(umlClass.y < regionInfo.top.y) { 
+    //     regionInfo.top = umlClass;
+    //   } else if(umlClass.y > regionInfo.bottom.y) { 
+    //     regionInfo.bottom = umlClass;
+    //   }
+    // }
 
     if (umlClass.uuid === selectedClass()?.uuid) {
 

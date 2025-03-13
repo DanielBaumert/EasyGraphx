@@ -287,6 +287,18 @@ const App: Component = () => {
     startUpdateView();
   }
 
+  function onContextMenuSortHorizontal() {
+    
+    internalStore.classes.sort((a, b) => b.height - a.height);
+    let x = 0;
+    for (let element of internalStore.classes) {
+      element.x = x;
+      x += element.width + 8;
+    }
+
+    startUpdateView();
+  }
+
   function onContextMenuSaveImage() {
     const {
       width: curWidth,
@@ -381,8 +393,9 @@ const App: Component = () => {
       let file = fileLoader.files[0];
       let buffer = await file.arrayBuffer();
       let content = new TextDecoder("utf-8").decode(buffer);
+      let decoded = deserialize(content);
 
-      internalStore.classes.push(deserialize(content) as UMLClass);
+      internalStore.classes.push(...(decoded['classes'] as UMLClass[]));
 
       startUpdateView();
     });
@@ -416,6 +429,9 @@ const App: Component = () => {
           classExt={"hover:bg-red-500"}
           hidden={selectedClass() === null}
           onclick={onContextMenuRemoveClass} />
+        <NavItem title="Sort Horizontal"
+          classExt={"hover:bg-gradient-to-r hover:from-cyan-500 hover:to-blue-500"}
+          onclick={onContextMenuSortHorizontal} />
         <NavItem title="Save image"
           classExt={"hover:bg-gradient-to-r hover:from-cyan-500 hover:to-blue-500"}
           onclick={onContextMenuSaveImage} />
