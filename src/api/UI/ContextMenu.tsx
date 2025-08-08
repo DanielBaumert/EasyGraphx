@@ -10,7 +10,7 @@ const ContextMenu: ParentComponent<{
     <div class={`
             ${props.hidden ? 'hidden' : ''}
             fixed flex flex-col 
-            min-w-230 z-10 shadow-md`}
+            z-10 shadow-md`}
       ref={internalStore.contextMenuRef}
       style={{
         left: `${props.location?.x ?? 0}px`,

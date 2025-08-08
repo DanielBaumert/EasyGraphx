@@ -95,6 +95,7 @@ export interface IUMLParameter {
 export class UMLParameter implements IUMLParameter {
   name?: string;
   type?: string;
+  default?: string;
 
   constructor() { }
 }
@@ -193,7 +194,16 @@ export class UMLPackage {
   }
 }
 
-export type UMLRelationship = {
+
+export class UMLRelationshipImportExport {
+  uuid: string;
+  type: UMLRelationshipType;
+  parentUUID?: string;
+  childrenUUID: string;
+};
+
+
+export class UMLRelationship{
   uuid: string;
   type: UMLRelationshipType;
   parent?: UMLClass;
@@ -223,6 +233,10 @@ function onUMLParameterToString(umlParameter: UMLParameter): string {
     sb.write(umlParameter.name);
     if (umlParameter.type) {
       sb.write(":").write(umlParameter.type);
+    }
+
+    if (umlParameter.default) {
+      sb.write("=").write(umlParameter.default);
     }
   } else if (umlParameter.type) {
     sb.write(umlParameter.type);
@@ -254,7 +268,7 @@ function onUMLMethodeToString(umlMethode: UMLMethode): string {
 function onUMLClassToString(umlClass: UMLClass): string {
   let sb = new StringBuilder();
 
-  if (umlClass.property !== undefined) {
+  if (umlClass.property !== undefined && umlClass.property !== '') {
     sb.write("<<").write(umlClass.property).write(">>").newline();
   }
 

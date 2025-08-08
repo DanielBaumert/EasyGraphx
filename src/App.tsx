@@ -7,12 +7,13 @@ import { selectedClass, setContextMenuOpen, locationContextMenu, isContextMenuOp
 import { onCanvasMouseDown, onCanvasMouseMove, onCanvasMouseUp } from './api/Peripheral/Mouse';
 import { Math2 } from './api/Math2';
 import Canvas, { canvas } from './api/UI/Canvas';
-import { UMLArrowMode, UMLAttribute, UMLClass, UMLEnum, UMLInterface, UMLLineMode, UMLMethode, UMLPackage, UMLRelationshipType, UmlToString } from './api/UML';
+import { UMLArrowMode, UMLAttribute, UMLClass, UMLEnum, UMLInterface, UMLLineMode, UMLMethode, UMLPackage, UMLRelationship, UMLRelationshipImportExport, UMLRelationshipType, UmlToString } from './api/UML';
 import { UMLClassComponent } from './api/UML/UMLClass';
 import { Point } from './api/Drawing';
 import { deserialize, serialize } from './api/IO/Serialization';
 import { UMLPackageComponent } from './api/UML/UMLPackage';
 import { drawBackground, drawClass as drawClasses } from './api/Drawing/UtilsDrawing';
+import { onCanvasKeyDown } from './api/Peripheral/Keyboard';
 
 const App: Component = () => {
 
@@ -53,7 +54,9 @@ const App: Component = () => {
 
       // Draw background
       {
-        drawBackground(ctx, canvas, gridSize, subGridSize);
+        if(!internalStore.screenshotMode) {
+          drawBackground(ctx, canvas, gridSize, subGridSize);
+        }
       }
       // Font setup
       const linePadding = 2;
@@ -343,7 +346,8 @@ const App: Component = () => {
 
     canvas.width = w;
     canvas.height = h;
-
+    
+    internalStore.screenshotMode = true;
     startUpdateView(() => {
       const link = document.createElement("a");
       link.download = 'download.png';
@@ -360,7 +364,8 @@ const App: Component = () => {
           x: curX,
           y: curY
         });
-
+        
+      internalStore.screenshotMode = false;
       startUpdateView();
     });
   }
@@ -368,7 +373,7 @@ const App: Component = () => {
   function onContextMenuSaveState() {
     const link = document.createElement("a");
     let file = new Blob(
-      [serialize(internalStore.classes[0])],
+      [serialize(internalStore)],
       { type: 'application/json;charset=utf-8' });
     link.download = 'config.json';
     link.href = URL.createObjectURL(file);
@@ -393,9 +398,18 @@ const App: Component = () => {
       let file = fileLoader.files[0];
       let buffer = await file.arrayBuffer();
       let content = new TextDecoder("utf-8").decode(buffer);
-      let decoded = deserialize(content);
+      let json = deserialize(content);
 
-      internalStore.classes.push(...(decoded['classes'] as UMLClass[]));
+      internalStore.classes.push(...(json['classes'] as UMLClass[]));
+      internalStore.relationships.push(...(json['relationships'] as UMLRelationshipImportExport[])
+        .map(x => { 
+          const relation = new UMLRelationship();
+          relation.parent = internalStore.classes.find(y => y.uuid === x.parentUUID);
+          relation.children = internalStore.classes.find(y => y.uuid === x.childrenUUID);
+          relation.type = x.type;
+          relation.uuid = x.uuid;
+          return relation;
+        }));
 
       startUpdateView();
     });
@@ -445,7 +459,9 @@ const App: Component = () => {
       <Canvas
         onMouseDown={onCanvasMouseDown}
         onMouseMove={onCanvasMouseMove}
-        onMouseUp={onCanvasMouseUp} />
+        onMouseUp={onCanvasMouseUp}
+        onKeyDown={onCanvasKeyDown}
+        />
       {/* WRTC */}
       {/* <div class="absolute fixed flex flex-row">
         <Button title='Share' onclick={() => {}} />

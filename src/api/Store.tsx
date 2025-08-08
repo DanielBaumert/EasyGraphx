@@ -38,6 +38,7 @@ type InternalStore = {
   relationships: UMLRelationship[],
   contextMenuRef?: HTMLDivElement,
   contextMenuOpenMode?: ContextOpenMode;
+  screenshotMode: boolean;
 };
 
 export let internalStore : InternalStore = {
@@ -66,7 +67,8 @@ export let internalStore : InternalStore = {
   classes: [],
   relationships: [],
   contextMenuRef: null,
-  contextMenuOpenMode: null
+  contextMenuOpenMode: null,
+  screenshotMode: false
 };
 
 

@@ -29,8 +29,7 @@ const isPrimaryAndSecondaryButtonPressed = (e: MouseEvent): boolean => {
 }
 
 export const onCanvasMouseDown = (e: MouseEvent) => {
-  setSelectedClass(null);
-  setSelectedPackage(null);
+
 
   if (isContextMenuOpen()) {
     setContextMenuOpen(false);

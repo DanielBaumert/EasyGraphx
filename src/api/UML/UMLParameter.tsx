@@ -21,6 +21,12 @@ export const UMLParameterContainer: Component<{
   }
 
 
+  function onDefaultInputChanged(e) {
+    props.param.default = e.currentTarget.value;
+    startUpdateView();
+  }
+
+
   function getCollapesedLabel(): string {
     const label = UmlToString(props.param as UMLParameter);
     if(label === '') 
@@ -58,6 +64,10 @@ export const UMLParameterContainer: Component<{
           title="Type"
           initValue={props.param.type}
           onInputChange={onTypeInputChanged} />
+        <Field
+          title="Default"
+          initValue={props.param.default}
+          onInputChange={onDefaultInputChanged} />
       </Show>
       <Show when={!isExpanded()}>
         <SmallLabel title={getCollapesedLabel()} />

@@ -1,11 +1,12 @@
-import { UMLAttribute, UMLClass, UMLMethode, UMLPackage, UMLParameter } from "../UML";
+import { UMLAttribute, UMLClass, UMLMethode, UMLPackage, UMLParameter, UMLRelationshipImportExport } from "../UML";
 
 const classes = {
   UMLAttribute,
   UMLParameter,
   UMLMethode,
   UMLClass,
-  UMLPackage
+  UMLPackage,
+  UMLRelationshipImportExport
 };
 
 export function serialize(object: any) { 
@@ -23,9 +24,11 @@ export function deserialize(json : string) {
   
   return JSON.parse(json, (_, value) => {
     if (value && typeof (value) === "object" && value.__type) {
-      const dynamicClass = classes[value.__type]
-      value = Object.assign(new dynamicClass(), value);
-      delete value.__type;
+      if(value.__type !== "Object") {
+        const dynamicClass = classes[value.__type]
+        value = Object.assign(new dynamicClass(), value);
+        delete value.__type;
+      }
     }
     return value;
   });

@@ -4,7 +4,7 @@ import NavItemInfo from "./NavItemInfo";
 const NavItem: Component<NavItemInfo> = (props) => (
   <button class={`
         bg-white
-        px-8 py-2 w-full
+        px-8 py-2
         text-left
         border border-gray-200 
         text-sm font-medium text-gray-700  
