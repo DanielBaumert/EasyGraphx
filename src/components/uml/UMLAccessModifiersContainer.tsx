@@ -1,37 +1,16 @@
-import { Component, createSignal, JSX, onMount } from "solid-js";
-import { CheckBox } from "./CheckBox";
-import { SmallLabel } from "./Label";
+import CheckBox from "../basic/CheckBox";
+import LabelSmall from "../basic/LabelSmall";
 
-export enum UMLAccessModifiers { 
-    Public = '+',
-    Private = '-',
-    Proteced = '#',
-    Internal = '~',
-}
 
-export interface IUMLAccessModifiers { 
-    accessModifier?: UMLAccessModifiers;
-}
 
-export const UMLAccessModifiersContainer : Component<{
-    id: string,
-    initValue?: UMLAccessModifiers,
-    onChange: (accessModifier:UMLAccessModifiers)=>void
-}> = (props) => { 
-    const [accessModifier, setAccessModifier] = createSignal<UMLAccessModifiers>(props.initValue);
+const UMLAccessModifiersContainer = (props) => {
+    const [accessModifier, setAccessModifier] = createState(props.initValue);
 
-    function updateAccessModifier(modifiers:UMLAccessModifiers) { 
-        var state = accessModifier() != modifiers ? modifiers : undefined;
-
-        setAccessModifier(state);
-        props.onChange(state);
-    }
-
-    return (
-        <>
-        <SmallLabel title="Access Modifiers"/>
-        <div class="grid grid-cols-2 gap-x-3">
-            <div class="flex flex-col">
+  return (
+    <>
+     <LabelSmall title="Access Modifiers"/>
+        <div className="grid grid-cols-2 gap-x-3">
+            <div className="flex flex-col">
                 <CheckBox 
                     title="Public (+)" 
                     id={`public-${props.id}`}
@@ -43,7 +22,7 @@ export const UMLAccessModifiersContainer : Component<{
                     value={accessModifier() === UMLAccessModifiers.Proteced} 
                     onChanges={() => updateAccessModifier(UMLAccessModifiers.Proteced)}/>
             </div>
-            <div class="flex flex-col ">
+            <div className="flex flex-col ">
                 <CheckBox 
                     title="Private (-)"
                     id={`private-${props.id}`}
@@ -56,6 +35,6 @@ export const UMLAccessModifiersContainer : Component<{
                     onChanges={() => updateAccessModifier(UMLAccessModifiers.Internal)}/>
             </div>
         </div>
-        </>);
-};
-
+    </>
+  );
+}

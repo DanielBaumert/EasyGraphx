@@ -1,11 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-
-*{
-    font-size: large;
-}
+@import "tailwindcss";
 
 /* width */
 ::-webkit-scrollbar {
@@ -25,4 +18,8 @@
     background: rgb(56 189 248 / var(--tw-border-opacity));
     border-left: 0.25rem solid #ffffff;
     background-clip: padding-box;
+}
+
+.floating-edges .react-flow__handle {
+    opacity: 0;
 }

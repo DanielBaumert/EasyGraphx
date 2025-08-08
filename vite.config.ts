@@ -1,8 +1,9 @@
 import { defineConfig } from 'vite';
-import solidPlugin from 'vite-plugin-solid';
+import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
-  plugins: [solidPlugin()],
+  plugins: [react(), tailwindcss()],
   server: {
     port: 3000,
   },
