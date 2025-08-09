@@ -1,6 +1,7 @@
 import { Handle, Position } from "@xyflow/react";
 import { memo } from "react";
-import { UMLClass } from "../../api/Uml";
+import { UMLClass, UmlToString } from "../../api/Uml";
+import BreakText from "../basic/BreakText";
 
 type UMLClassNodeProps = {
   data: UMLClass;
@@ -8,7 +9,6 @@ type UMLClassNodeProps = {
 };
 
 function UMLClassNode({ data, isConnectable }: UMLClassNodeProps) {
-
 
   return (
     <>
@@ -18,22 +18,24 @@ function UMLClassNode({ data, isConnectable }: UMLClassNodeProps) {
         onConnect={(params) => console.log('handle onConnect', params)}
         isConnectable={isConnectable}
       />
-      <div className="shadow-md rounded-md bg-white border-1 border-stone-400">
+      <div className="rounded bg-white border border-stone-400">
         <div className="flex flex-col">
-          <div className="p-2">
-            <div></div>
-            {(data.isAbstract ?? false)
-              ? <i>{data.name}</i>
-              : data.name}
-            <div></div>
+          <code className="p-2 text-center">
+            <BreakText>
+              {UmlToString(data)}
+            </BreakText>
+          </code>
+          <hr />
+          <div className="flex flex-col p-2">
+            {data.attributes.map((attribute, index) => {
+              return <code key={index}>{UmlToString(attribute)}</code>;
+            })}
           </div>
           <hr />
-          <div className="p-2">
-            <div>Method</div>
-          </div>
-          <hr />
-          <div className="p-2">
-            <div>Method</div>
+          <div className="flex flex-col p-2">
+            {data.methods.map((method, index) => {
+              return <code key={index}>{UmlToString(method)}</code>;
+            })}
           </div>
         </div>
       </div>

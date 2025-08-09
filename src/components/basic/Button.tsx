@@ -1,6 +1,6 @@
 type ButtonProps = {
   title: string;
-  onClick: React.MouseEventHandler<HTMLButtonElement>;
+  onClick?: React.MouseEventHandler<HTMLButtonElement>;
 };
 
 export default (props: ButtonProps) =>

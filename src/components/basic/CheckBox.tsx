@@ -2,7 +2,7 @@ type RadioProps = {
   id: string,
   title: string,
   value: boolean,
-  onChanges: React.ChangeEventHandler<HTMLInputElement>
+  onChanges?: React.ChangeEventHandler<HTMLInputElement>
 }
 
 export default (props: RadioProps) =>
