@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { UMLClass } from "../../api/Uml";
-import { Button, CheckBox, Field, Label } from "..";
+import { Button, CheckBox, Field, Label, NavItem, UMLAttributeContainer } from "..";
+import { type Node } from "@xyflow/react";
+import Navbar from "../basic/Navbar";
+import UMLMethodeContainer from "./UMLMethodContainer";
 
 enum UMLContextMenu {
   Attributes,
@@ -9,131 +12,131 @@ enum UMLContextMenu {
 }
 
 type UMLClassComponentProps = {
-  selectedClass?: UMLClass;
+  node: Node<UMLClass>
+  setNodes: React.Dispatch<React.SetStateAction<Node<UMLClass>[]>>;
 };
 
 export default (props: UMLClassComponentProps) => {
-
   const [contentIndex, setContextIndex] = useState<UMLContextMenu>(UMLContextMenu.Attributes);
 
+  const updateNode = (data: Partial<UMLClass>) => {
+    props.setNodes(nodes => nodes.map(node => {
+      if (node.id === props.node.id) {
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            ...data
+          }
+        };
+      }
+      return node;
+    }));
+  };
+
   return (
-    props.selectedClass &&
     <>
-      <div id="side-nav" className="fixed flex max-h-screen top-0 right-0 p-4 min-w-2/12">
-        <div className="flex grow flex-col">
-          <div className="bg-white rounded border border-sky-400 px-4 py-2 mb-4 shadow">
+      <div id="side-nav" className="fixed flex max-h-screen top-0 right-0 p-4 min-w-1/4 gap-2">
+        <div className="flex grow flex-col gap-2">
+          <div className="bg-white dark:bg-[#3e3e3e] rounded border-2 border-sky-400 px-4 py-2 shadow">
             <Label title="Class" />
             <Field title='Property'
-              initValue={props.selectedClass!.property}
-              onInputChange={e => {
-                // if (selectedClass().property?.trim().toLowerCase() !== "interface" // source become an interface
-                //   && e.currentTarget.value.trim().toLowerCase() === "interface") {
-
-                // } else if (selectedClass().property.trim().toLowerCase() === "interface"
-                //   && e.currentTarget.value.trim().toLowerCase() !== "interface") {
-
-                // }
-
-                // selectedClass().property = e.currentTarget.value;
-                // setSelectedClass(selectedClass());
-                // startUpdateView();
-              }} />
+              initValue={props.node.data.property}
+              onInputChange={e => updateNode({ property: e.target.value })} />
             <Field title='Name'
-              initValue={props.selectedClass!.name}
-               /*onInputChange={onNameInputChanged}*/ />
-            <CheckBox id="static" title="Abstract" value={props.selectedClass!.isAbstract!}
-            //  onChanges={updateIsStatic} 
-             />
+              initValue={props.node.data.name}
+              onInputChange={e => updateNode({ name: e.target.value })} />
+            <CheckBox id="static" title="Abstract" initValue={props.node.data.isAbstract ?? false}
+              onChanges={(e) => updateNode({ isAbstract: e.target.checked })}
+            />
           </div>
+          <div className="relative flex flex-col overflow-hidden">
           {/* Tabs */}
-          <div>
-            <div className='flex flex-row justify-between'>
-              <div className={`py-1 w-full text-sm font-medium text-gray-700 rounded-t
-            text-center select-none cursor-pointer
-            ${contentIndex === UMLContextMenu.Attributes
-                  ? "bg-white border-sky-400 border-x border-t"
-                  : "border border-gray-400 bg-white border-b-sky-400 hover:border-sky-400 text-gray-400 hover:text-gray-700"}`}
-                onClick={() => setContextIndex(UMLContextMenu.Attributes)}
-              >Attributes</div>
-              <div className={`py-1 w-full text-sm font-medium text-gray-700 rounded-t
-            text-center select-none cursor-pointer
-            ${contentIndex === UMLContextMenu.Methodes
-                  ? "bg-white border-sky-400 border-x border-t"
-                  : "border border-gray-400 bg-white border-b-sky-400 hover:border-sky-400 text-gray-400 hover:text-gray-700"}`}
-                onClick={() => setContextIndex(UMLContextMenu.Methodes)}
-              >Methodes</div>
-              <div className={`py-1 w-full text-sm font-medium text-gray-700 rounded-t
-            text-center select-none cursor-pointer
-            ${contentIndex === UMLContextMenu.Relationships
-                  ? "bg-white border-sky-400 border-x border-t"
-                  : "border border-gray-400 bg-white border-b-sky-400 hover:border-sky-400 text-gray-400 hover:text-gray-700"}`}
-                onClick={() => setContextIndex(UMLContextMenu.Relationships)}
-              >Relationships</div>
-              {/* <Button title="" onclick={() => setContextIndex(1)} /> */}
-            </div>
-          </div>
+          <Navbar>
+            <NavItem
+              title="Attributes"
+              onClick={() => setContextIndex(UMLContextMenu.Attributes)}
+              isActive={contentIndex === UMLContextMenu.Attributes} />
+            <NavItem
+              title="Methodes"
+              onClick={() => setContextIndex(UMLContextMenu.Methodes)}
+              isActive={contentIndex === UMLContextMenu.Methodes} />
+            <NavItem
+              title="Relationships"
+              onClick={() => setContextIndex(UMLContextMenu.Relationships)}
+              isActive={contentIndex === UMLContextMenu.Relationships} />
+          </Navbar>
           {/* Tabs content */}
-          {(() => {
-            switch (contentIndex) {
-              case UMLContextMenu.Attributes:
-                return (
-                  <div id="attr-container" className="flex flex-col overflow-hidden max-h-max bg-white rounded-b border-x border-b border-sky-400 p-2 shadow">
-                    <Button title='Add attribute' /*onClick={pushAttribute} *//>
-                    <div className="overflow-y-auto h-full">
-                      {/* <For each={selectedClass().attributes}>
-                        {(attr, i) => <UMLAttributeContainer
-                          index={i()}
-                          attr={attr}
-                          update={startUpdateView}
-                          delete={() => popAttribute(i())} />}
-                      </For> */}
-                    </div>
-                  </div>)
-              case UMLContextMenu.Methodes:
-                return (
-                  <div id="meth-container" className="flex flex-col overflow-hidden max-h-max bg-white rounded-b border-x border-b border-sky-400 p-2 shadow">
-                    <Button title='Add methode' /*onClick={pushMethode} *//>
-                    <div className="overflow-y-auto h-full">
-                      {/* <For each={selectedClass().methodes}>
-                        {(methode, iMethode) => {
-                          return (<UMLMethodeContainer
-                            index={iMethode()}
-                            methode={methode}
-                            delete={() => popMethode(iMethode())}
-                            onPushParameter={() => pushParameter(iMethode())}>
+          {contentIndex === UMLContextMenu.Attributes && (
+            <div id="attr-container" className="flex flex-col overflow-hidden max-h-max bg-white dark:bg-[#3e3e3e] rounded-b-2 border-2 border-sky-400 p-2 shadow">
+              <div className="pb-2">
+                <Button title='Add attribute' /*onClick={pushAttribute} */ />
+              </div>
+              <div className="overflow-y-auto h-full flex flex-col gap-1">
+                {props.node.data.attributes.map((attr, i) => (
+                  <UMLAttributeContainer
+                    key={i}
+                    index={i}
+                    attr={attr}
+                    update={(data) => updateNode({
+                      attributes: props.node.data.attributes.map((attr, iAttr) => {
+                        if (iAttr === i) {
+                          return data;
+                        }
 
-                            <For each={selectedClass().methodes[iMethode()].parameters}>
-                              {(param, iParam) => <UMLParameterContainer
-                                param={param}
-                                popParameter={() => popParameter(iMethode(), iParam())}
-                              />}
-                            </For>
-                          </UMLMethodeContainer>);
-                        }}
-                      </For> */}
-                    </div>
-                  </div>);
-              case UMLContextMenu.Relationships:
-                // return (
-                //   <div id="meth-container" className="flex flex-col overflow-hidden max-h-max bg-white rounded-b border-x border-b border-sky-400 p-2 shadow">
-                //     <Button title='Add Relationships' onClick={pushRelationship} />
-                //     <div className="overflow-y-auto h-full">
-                //       <For each={internalStore.relationships.filter(x => x.children.uuid === selectedClass().uuid)}>
-                //         {(relationShip, iRelationship) => {
-                //           return <UMLRelationshipContainer
-                //             index={iRelationship()}
-                //             childrenClass={selectedClass()}
-                //             relationship={relationShip}
-                //             delete={popRelationship}
-                //           />;
-                //         }}
-                //       </For>
-                //     </div>
-                //   </div>);
-            }
-          })()}
+                        return attr;
+                      })
+                    })}
+                    delete={() => { }} />
+                ))}
+              </div>
+            </div>)}
+          {contentIndex === UMLContextMenu.Methodes && (
+            <div id="meth-container" className="flex flex-col overflow-hidden max-h-max bg-white dark:bg-[#3e3e3e] rounded-b-2 border-2 border-sky-400 p-2 shadow">
+              <div className="pb-2">
+                <Button title='Add methode' /*onClick={pushMethode} */ />
+              </div>
+              <div className="overflow-y-auto h-full flex flex-col gap-2">
+                {props.node.data.methods.map((methode, iMethode) => {
+                  return (
+                    <UMLMethodeContainer
+                      key={iMethode}
+                      index={iMethode}
+                      methode={methode}
+                      update={data => updateNode({
+                        methods: props.node.data.methods.map((m, i) => {
+                          if (i === iMethode) {
+                            return data;
+                          }
+                          return m;
+                        })
+                      })}
+                    />
+                  );
+                })}
+              </div>
+            </div>)}
+          {contentIndex === UMLContextMenu.Relationships && (
+            <div id="rel-container" className="flex flex-col overflow-hidden max-h-max bg-white rounded-b border-x border-b border-sky-400 p-2 shadow"></div>)}
         </div>
+      </div>
       </div>
     </>);
 
 }
+
+
+ {/* <Button title='Add Relationships' onClick={pushRelationship} />
+                <div className="overflow-y-auto h-full">
+                  <For each={internalStore.relationships.filter(x => x.children.uuid === selectedClass().uuid)}>
+                    {(relationShip, iRelationship) => {
+                      return <UMLRelationshipContainer
+                        index={iRelationship()}
+                        childrenClass={selectedClass()}
+                        relationship={relationShip}
+                        delete={popRelationship}
+                      />;
+                    }}
+                  </For>
+                </div>
+              </div> */}

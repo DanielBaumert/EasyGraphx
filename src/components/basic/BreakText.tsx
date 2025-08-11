@@ -3,11 +3,5 @@ type Props = {
 }
 
 export default (props: Props) =>
-  props.children.split('\n').map((subStr) => {
-    return (
-      <>
-        {subStr}
-        <br />
-      </>
-    );
-  });
+  props.children.split('\n').map((subStr, index) => 
+        <p key={index}>{subStr}</p>);

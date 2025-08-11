@@ -5,54 +5,42 @@ export enum UMLAccessModifiers {
   Internal = '~',
 }
 
-export class UMLClass {
-  public accessModifier?: UMLAccessModifiers;
-  public name: string;
-  public property: string;
-  public isAbstract?: boolean;
-  public attributes: UMLAttribute[];
-  public methods: UMLMethode[];
-
-  public constructor(init?:Partial<UMLClass>) {
-    Object.assign(this, init);
-  }
+export type UMLClass = {
+  __type__: 'class';
+  accessModifier?: UMLAccessModifiers;
+  name: string;
+  property: string;
+  isAbstract?: boolean;
+  attributes: UMLAttribute[];
+  methods: UMLMethode[];
 }
 
-export class UMLAttribute {
-  public isStatic?: boolean;
-  public isConstant?: boolean;
-  public accessModifier?: UMLAccessModifiers;
-  public name: string;
-  public type?: string;
-  public multiplicity?: number;
-  public defaultValue?: string;
-
-  public constructor(init?:Partial<UMLAttribute>) {
-    Object.assign(this, init);
-  }
+export type UMLAttribute = {
+  __type__: 'attribute';
+  isStatic?: boolean;
+  isConstant?: boolean;
+  accessModifier?: UMLAccessModifiers;
+  name: string;
+  type?: string;
+  multiplicity?: number;
+  defaultValue?: string;
 }
 
-export class UMLMethode {
-  public isStatic?: boolean;
-  public accessModifier?: UMLAccessModifiers;
-  public name: string;
-  public returnType?: string;
-  public parameters?: UMLParameter[];
-
-  public constructor(init?:Partial<UMLMethode>) {
-    Object.assign(this, init);
-  }
+export type UMLMethode = {
+  __type__: 'method';
+  isStatic?: boolean;
+  accessModifier?: UMLAccessModifiers;
+  name: string;
+  returnType?: string;
+  parameters?: UMLParameter[];
 }
 
-export class UMLParameter {
-  public name: string;
-  public type?: string;
-  public defaultValue?: string;
-
-  public constructor(init?:Partial<UMLParameter>) {
-    Object.assign(this, init);
-  }
-};
+export type UMLParameter = {
+  __type__: 'parameter';
+  name: string;
+  type?: string;
+  defaultValue?: string;
+}
 
 class StringBuilder {
   private _lines: string[] = [];
@@ -85,7 +73,14 @@ function onUMLAttributeToString(umlAttribute: UMLAttribute): string {
   if (umlAttribute.accessModifier) {
     sb.write(umlAttribute.accessModifier).write(' ');
   }
-  sb.write(umlAttribute.isConstant ? umlAttribute.name.toUpperCase() : umlAttribute.name);
+
+  if (umlAttribute.isConstant) {
+    sb.write(umlAttribute.name.toUpperCase());
+  }
+  else {
+    sb.write(umlAttribute.name);
+  }
+
   if (umlAttribute.type) {
     sb.write(' : ').write(umlAttribute.type);
   }
@@ -118,7 +113,7 @@ function onUMLMethodeToString(umlMethode: UMLMethode): string {
   }
 
   sb.write(umlMethode.name).write('(')
-    .write(umlMethode.parameters?.map((x : UMLParameter) => UmlToString(x)).join(", ") ?? '')
+    .write(umlMethode.parameters?.map((x: UMLParameter) => UmlToString(x)).join(", ") ?? '')
     .write(')');
 
   if (umlMethode.returnType) {
@@ -151,20 +146,19 @@ export function UmlToString(umlParameter: UMLParameter): string;
 export function UmlToString(umlMethode: UMLMethode): string;
 export function UmlToString(umlClass: UMLClass): string;
 export function UmlToString(
-  uml: UMLAttribute | UMLParameter | UMLMethode | UMLClass): string {
+  uml: UMLAttribute | UMLParameter | UMLMethode | UMLClass): string|never {
 
-  if (uml instanceof UMLAttribute) {
-    return onUMLAttributeToString(uml);
+  switch (uml.__type__) {
+    case 'attribute':
+      return onUMLAttributeToString(uml as UMLAttribute);
+    case 'parameter':
+      return onUMLParameterToString(uml as UMLParameter);
+    case 'method':
+      return onUMLMethodeToString(uml as UMLMethode);
+    case 'class':
+      return onUMLClassToString(uml as UMLClass);
+    default:
+      console.error("UML type is undefined", uml);
+      throw new Error("UML type is undefined");
   }
-  if (uml instanceof UMLParameter) {
-    return onUMLParameterToString(uml);
-  }
-  if (uml instanceof UMLMethode) {
-    return onUMLMethodeToString(uml);
-  }
-  if (uml instanceof UMLClass) {
-    return onUMLClassToString(uml);
-  }
-
-  throw new Error("Unknown UML type");
 }

@@ -28,7 +28,9 @@ function UMLClassNode({ data, isConnectable }: UMLClassNodeProps) {
           <hr />
           <div className="flex flex-col p-2">
             {data.attributes.map((attribute, index) => {
-              return <code key={index}>{UmlToString(attribute)}</code>;
+              return (attribute.isStatic &&
+                 <code key={index} className="italic">{UmlToString(attribute)}</code>)
+                 || <code key={index}>{UmlToString(attribute)}</code>
             })}
           </div>
           <hr />

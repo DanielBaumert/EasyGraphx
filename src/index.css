@@ -23,3 +23,7 @@
 .floating-edges .react-flow__handle {
     opacity: 0;
 }
+
+.react-flow__panel.react-flow__attribution.bottom.right {
+    display: none;
+}
