@@ -29,7 +29,7 @@ export default (props: UMLParameterContainerProps) => {
   }
 
   return (
-    <div className={`relative border rounded ${isExpanded && "px-1 pb-1 pt-4" || 'p-1'} mb-1 border-white`}>
+    <div className={`relative rounded ${isExpanded && "px-1 pb-1 pt-4" || 'p-1'} border-2 border-white`}>
       <div className={`absolute flex flex-row items-center ${!isExpanded && "h-full top-0" || "top-1"} right-1 z-20`}>
         <div className="group dark:hover:bg-[#333333] p-1" 
         // onClick={() => props.popParameter()}

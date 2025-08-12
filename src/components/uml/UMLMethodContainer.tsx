@@ -64,7 +64,7 @@ export default (props: UMLMethodContainerProps) => {
             />
           </div>
           <Show when={parameters.length !== 0}>
-            <div className="flex flex-col p-1 rounded border border-sky-400">
+            <div className="flex flex-col p-1 rounded border-2 border-sky-400 mb-2">
               {parameters.map((param, index) => (
                 <UMLParameterContainer key={index} 
                 umlParameter={param} 
